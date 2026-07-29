@@ -266,7 +266,7 @@ User Request → API Gateway → Agent Orchestration → Knowledge & Context →
 
 ## ۱۱. ارتباط با سایر اسناد (References)
 
-| سند | نوع ارتباط |
+| نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع Componentها و لایه‌های معماری که این سند برای هرکدام شاخص‌های نظارتی تعریف می‌کند. |
 | `Component_Map_And_Responsibilities` | مرجع مسئولیت Componentها در تولید داده‌های مشاهده‌پذیری (لاگ، شاخص، ردیابی). |

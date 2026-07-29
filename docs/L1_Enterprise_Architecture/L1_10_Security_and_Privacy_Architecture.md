@@ -296,7 +296,7 @@ Agentها همانند کاربران دارای هویت و نقش مشخص ه�
 
 ## ۱۶. ارتباط با سایر اسناد (References)
 
-| سند | نوع ارتباط |
+| نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Vision_and_Strategy` | اصول راهبردی (Zero Trust، Security by Design) که این سند بر اساس آن‌ها تدوین شده است. |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع Componentها و لایه‌های معماری که کنترل‌های امنیتی روی آن‌ها اعمال می‌شود (بخش ۴). |

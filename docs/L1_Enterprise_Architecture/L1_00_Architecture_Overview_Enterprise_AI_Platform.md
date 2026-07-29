@@ -95,11 +95,20 @@ Context، Agent، Tool، Memory و Knowledge به‌عنوان عناصر اصل
               │ Session / Long-Term     │
               └─────────────────────────┘
 
-              ┌─────────────────────────┐
-              │ Governance & Platform   │
-              │ Security / Policy /     │
-              │ Audit / Cost Control    │
-              └─────────────────────────┘
+═══════════════════════════════════════════════════════════
+   Governance & Platform Services (لایه افقی Cross-Cutting)
+   این یک Component تکی نیست؛ چند سرویس مستقل با مالکیت،
+   چرخه توسعه و استقرار جداگانه (شرح در بخش ۴.۷ و در سند
+   Domain_to_Component_and_Deployment_Mapping)
+═══════════════════════════════════════════════════════════
+   ┌────────────┐ ┌────────────┐ ┌────────────┐
+   │  Identity  │ │  Security  │ │ Governance │
+   │  & Access  │ │  & Privacy │ │ & Policy   │
+   └────────────┘ └────────────┘ └────────────┘
+   ┌─────────────┐ ┌────────────┐
+   │Observability│ │Responsible │
+   │             │ │     AI     │
+   └─────────────┘ └────────────┘
 ```
 
 ---
@@ -206,6 +215,8 @@ Context، Agent، Tool، Memory و Knowledge به‌عنوان عناصر اصل
 
 ## ۴.۷ Governance & Platform Services (سرویس‌های حاکمیت و پلتفرم)
 
+> **یادداشت هم‌راستاسازی معماری:** برخلاف شش Component دیگر معرفی‌شده در بخش‌های ۴.۱ تا ۴.۶ که هرکدام یک واحد معماری منسجم و قابل‌استقرار مستقل هستند، `Governance & Platform Services` از نظر مقیاس و پیچیدگی معادل یک Component تکی نیست. این عنوان یک **لایه افقی (Horizontal Layer)** است که از چند سرویس مستقل با مالکیت تیمی، چرخه توسعه و الزامات مقیاس‌پذیری کاملاً جداگانه تشکیل شده (Identity، Security، Governance/Policy، Observability، Responsible AI). این تفکیک با جزئیات کامل در سند `Domain_to_Component_and_Deployment_Mapping` مستند شده است. بخش ۶ همین سند و ۶ سند معماری دامنه مستقل در لایه L2 (`Identity_&_Access`، `Security_&_Privacy`، `Governance_&_Compliance`، `Infrastructure_&_Operations`، `Observability`، `Responsible_AI`)، هرکدام یکی از این زیرسرویس‌ها را با جزئیات کامل تشریح می‌کنند.
+
 **مسئولیت اصلی:** ایجاد کنترل، امنیت، انطباق و قابلیت مشاهده برای تمام جریان‌های سیستم؛ این قابلیت به‌صورت Cross-Cutting تمام لایه‌ها را پوشش می‌دهد.
 
 **قابلیت‌های کلیدی:**
@@ -216,7 +227,7 @@ Context، Agent، Tool، Memory و Knowledge به‌عنوان عناصر اصل
 
 **مرز مسئولیت:** این لایه منطق کسب‌وکاری اجرا نمی‌کند، جایگزین Orchestration Engine نیست و عملیات خارجی انجام نمی‌دهد؛ وظیفه آن کنترل، نظارت و اعمال Policy روی جریان اجرای سیستم است.
 
-> **یادداشت هم‌راستاسازی:** بخش ۶ همین سند (سرویس‌های مشترک) این لایه را به ۹ سرویس عملیاتی‌تر تفکیک می‌کند (Security & Identity، Policy Management، Audit، Logging، Monitoring، Configuration، Secret Management، Notification، Rate Limiting). این ۹ سرویس، پیاده‌سازی تفصیلی همان سه زیرمجموعه بالا هستند.
+> **یادداشت هم‌راستاسازی:** بخش ۶ همین سند (سرویس‌های مشترک) این لایه را به ۹ سرویس عملیاتی‌تر تفکیک می‌کند (Security & Identity، Policy Management، Audit، Logging، Monitoring، Configuration، Secret Management، Notification، Rate Limiting). این ۹ سرویس، پیاده‌سازی تفصیلی همان سه زیرمجموعه بالا هستند. با توجه به این تعداد و تنوع، این لایه در عمل به چند واحد استقرار مستقل تقسیم می‌شود، نه یک Service واحد؛ جزئیات در `Domain_to_Component_and_Deployment_Mapping`.
 
 ---
 

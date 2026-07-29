@@ -243,7 +243,7 @@
 
 ## ۱۶. ارتباط با سایر اسناد (References)
 
-| سند | نوع ارتباط |
+| نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Vision_and_Strategy` | اصول راهبردی (AI-Native، Human-in-the-Loop) که این سند بر اساس آن‌ها تدوین شده است |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع Componentها و لایه‌های معماری که کنترل‌های Responsible AI بر روی آن‌ها اعمال می‌شود |

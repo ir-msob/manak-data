@@ -25,7 +25,7 @@
 | **Incremental Delivery** | تحویل تدریجی قابلیت‌ها به‌جای انتشار یک‌باره؛ هر فاز باید به‌تنهایی ارزش‌آفرین باشد |
 | **Enterprise-first** | اولویت با نیازهای سازمان‌های بزرگ (امنیت، مقیاس، Governance) است، نه ویژگی‌های جانبی |
 | **AI-native** | هر فاز باید قابلیت هوش مصنوعی پلتفرم را عمیق‌تر کند، نه صرفاً رابط کاربری را گسترش دهد |
-| **Backward Compatibility** | افزودن فاز جدید نباید قراردادهای API یا رفتار فازهای قبلی را بشکند |
+| **Backward Compatibility** | افزودن فاز جدید نباید قراردادهای API یا رفتار فازهای قبلی را دچار اختلال کند |
 
 ---
 
@@ -83,7 +83,7 @@
 
 - اتوماسیون فرآیندهای کسب‌وکار (Business Process Automation)
 - برنامه‌ریزی خودمختار (Autonomous Planning) — گسترش نقش Planner Agent
-- بازارچه ابزار (Tool Marketplace) — امکان افزودن Tool توسط شخص ثالث
+- بازارچه ابزار (Tool Marketplace) — امکان افزودن Tool توسط شخص ثالث (چارچوب حاکمیتی در سند `Plugin_And_Marketplace_Governance_Architecture` از پیش تعریف شده است)
 - حاکمیت پیشرفته (Advanced Governance، گسترش سرویس‌های حاکمیت)
 
 ---
@@ -143,7 +143,7 @@
 
 # ۱۳. ارجاعات
 
-| سند | ارتباط |
+| نام سند | ارتباط |
 | :--- | :--- |
 | `High_Level_PRD_Enterprise_AI_Platform` | مرجع دقیق محدوده MVP که فاز ۱ بر اساس آن تعریف شده |
 | `Naming_And_Terminology_Glossary` | مرجع واژه‌نامه و استاندارد نام‌گذاری مورد استفاده در این سند |
@@ -152,5 +152,6 @@
 | `Multi_Agent_Collaboration_Model` | مرجع کامل همکاری چند‑Agent که موضوع اصلی فاز ۳ است |
 | `Deployment_Environment_Topology` | مرجع استقرار High‑Availability و Multi‑tenancy موردنیاز فاز ۲ |
 | `Risk_And_Failure_Mode_Analysis` | مرجع ریسک افزایش هزینه (Cost Growth) اشاره‌شده در بخش ۱۱ |
+| `Plugin_And_Marketplace_Governance_Architecture` | مرجع چارچوب حاکمیتی افزونه شخص‌ثالث که پیش‌نیاز فاز ۴ (بازارچه ابزار) و فاز ۵ (اکوسیستم) است |
 
 </div>

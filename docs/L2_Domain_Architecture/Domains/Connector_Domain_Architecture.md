@@ -460,7 +460,7 @@ Logging & Observability
 
 ## ۹. ارتباط با سایر اسناد (References)
 
-| سند | نوع ارتباط |
+| نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Naming_And_Terminology_Glossary` | مرجع واژه‌نامه و استاندارد نام‌گذاری |
 | `Domain Landscape` | مرجع دامنه‌های اصلی و جایگاه این دامنه |

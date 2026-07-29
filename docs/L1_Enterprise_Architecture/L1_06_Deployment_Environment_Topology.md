@@ -48,6 +48,8 @@
 
 # ۴. چند-مستأجری (Multi-Tenancy)
 
+> **ارجاع:** جزئیات کامل مدل Isolation در هر لایه، چرخه عمر Tenant، مدل Quota و معیار Dedicated Deployment در سند `Multi_Tenancy_Architecture` تجمیع شده‌اند. بخش زیر خلاصه سطح استقرار است.
+
 پلتفرم از مدل‌های زیر برای پشتیبانی از چند سازمان/واحد سازمانی (Tenant) پشتیبانی می‌کند:
 
 | مدل | توضیح |
@@ -153,10 +155,12 @@ Source → Build → Test → Security Scan → Deploy Dev → Staging Approval 
 | سند | ارتباط |
 | :--- | :--- |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع لایه‌های معماری که در بخش ۵ همین سند به توپولوژی استقرار نگاشت شده‌اند |
+| `Domain_to_Component_and_Deployment_Mapping` | مرجع تفصیلی تعداد و نوع دقیق واحدهای استقراری (Microservice/Platform/Sidecar) که روی این توپولوژی Kubernetes قرار می‌گیرند |
 | `Component_Map_And_Responsibilities` | مرجع Componentهایی که در بخش ۵ به لایه‌های Platform Services/AI Runtime/Knowledge Services نگاشت شدند |
 | `Data_Model_And_Knowledge_Schema_Overview` | مرجع موجودیت‌های داده‌ای که فناوری‌های لایه داده (بخش ۷) از آن‌ها پشتیبانی می‌کنند |
 | `Non_Functional_Requirements_And_SLA` | مرجع اهداف مشاهده‌پذیری و بازیابی از حوادث که این سند پیاده‌سازی زیرساختی آن‌ها را مشخص می‌کند |
 | `Multi_Agent_Collaboration_Model` | مرجع الگوهای اجرای چند-Agent که روی Dedicated AI Workers (بخش ۶) و Message Broker (بخش ۷) این سند اجرا می‌شوند |
+| `Multi_Tenancy_Architecture` | مرجع تفصیلی مدل چند‑مستأجری که بخش ۴ این سند خلاصه سطح استقرار آن است |
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع کامل Zero Trust و احراز هویت سرویس‌به‌سرویس اشاره‌شده در بخش ۸ همین سند |
 | `Governance_And_Platform_Services_Design` | مرجع پیاده‌سازی سرویس‌های مدیریت پیکربندی و اسرار که در بخش ۱۲ به آن‌ها اشاره شده است |
 

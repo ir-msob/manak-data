@@ -240,9 +240,10 @@
 
 ## ۱۵. ارتباط با سایر اسناد (References)
 
-| سند | نوع ارتباط |
+| نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع Componentها و لایه‌های معماری که کنترل‌های حاکمیت داده بر روی آن‌ها اعمال می‌شوند |
+| `Multi_Tenancy_Architecture` | مرجع چرخه عمر Tenant (بخش ۵ آن سند) که فرآیند Offboarding و Secure Purge این سند بر اساس آن اجرا می‌شود |
 | `Data_Model_And_Knowledge_Schema_Overview` | مرجع ساختار داده، فراداده و طرحواره دانش که زیربنای پیاده‌سازی طبقه‌بندی و فراداده در این سند است |
 | `Security_and_Privacy_Architecture` | مرجع کنترل‌های امنیتی و حریم خصوصی که این سند سیاست‌های دسترسی و حفاظت از داده را با آن هم‌راستا می‌کند |
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع کنترل دسترسی در مرزهای یکپارچه‌سازی که سیاست‌های دسترسی این سند بر اساس آن پیاده‌سازی می‌شوند |

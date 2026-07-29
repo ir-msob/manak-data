@@ -164,7 +164,7 @@ Security | Policy Management | Guardrails | Audit | Monitoring | Cost Control
 - **مدیریت اجرا (Execution Management):** اجرای Toolها، مدیریت فراخوانی API، اجرای گردش‌کار (Workflow)، اجرا در محیط ایزوله (Sandbox)
 - **مدیریت قابلیت اطمینان (Reliability Management):** تکرار مجدد (Retry)، مدیریت خطا (Error Handling)، مدیریت تراکنش (Transaction Management)، بازگشت به حالت قبل (Rollback)
 
-**مرز مسئولیت:** بدون درخواست معتبر و مجاز از Orchestration Engine عملیاتی انجام نمی‌دهد. تصمیم نمی‌گیرد چه عملی انجام شود و Intent کاربر را تحلیل نمی‌کند.
+**مرز مسئولیت:** بدون درخواست معتبر و مجاز از Orchestration Engine عملیاتی انجام نمی‌دهد. تصمیم نمی‌گیرد چه عملی انجام شود و Intent کاربر را تحلیل نمی‌کند. توالی، شرط و منطق چندمرحله‌ای گردش‌کار را نیز مدیریت نمی‌کند؛ این مسئولیت به‌طور کامل بر عهده دامنه مدیریت جریان کار (Workflow) است که به‌عنوان یک مصرف‌کننده تک‌مرحله‌ای از این Engine استفاده می‌کند (شرح کامل در `Workflow_Domain_Architecture`، بخش ۴.۵ همان سند).
 
 ---
 
@@ -183,9 +183,12 @@ Security | Policy Management | Guardrails | Audit | Monitoring | Cost Control
 
 ## ۴.۷ Governance & Platform Services (سرویس‌های حاکمیت و پلتفرم)
 
+> **یادداشت هم‌راستاسازی معماری:** این عنوان، برخلاف شش Component دیگر این سند، یک واحد معماری تکی نیست بلکه چتری برای چند سرویس مستقل با مالکیت و چرخه استقرار جداگانه است (Identity، Security، Governance/Policy، Observability، Responsible AI). جزئیات تفکیک در سند `Domain_to_Component_and_Deployment_Mapping` آمده است. جدول بخش ۵ همین سند («تعاملات بین کامپوننت‌ها») این عنوان را همچنان به‌صورت یک ردیف واحد نشان می‌دهد چون از منظر Contract بیرونی (سایر Componentها با آن به‌صورت یک مقصد منطقی تعامل دارند)، اما از منظر استقرار داخلی چند Service مجزاست.
+
 **مسئولیت اصلی:** ایجاد کنترل، امنیت، انطباق و قابلیت مشاهده برای تمامی جریان‌های سیستم؛ به‌صورت سراسری (Cross‑Cutting) تمام Componentها را پوشش می‌دهد.
 
 **وظایف کلیدی:**
+
 - **ایمنی هوش مصنوعی و حفاظت‌ها (AI Safety & Guardrails):** اعتبارسنجی ورودی (Prompt Validation)، اعتبارسنجی خروجی (Output Validation)، جلوگیری از تزریق دستور (Prompt Injection) و نشت داده (Data Leakage)، کنترل استفاده از Tool
 - **حسابرسی و ردیابی (Audit & Traceability):** ثبت رویدادهای مهم، ردپای اجرا (Execution Trace)، تصمیمات مهم Agent، فعالیت کاربران و سیستم‌ها
 - **کنترل هزینه و منابع (Cost & Resource Control):** پایش مصرف توکن، پایش مصرف مدل، ردیابی هزینه (Cost Tracking)، کنترل منابع
@@ -218,9 +221,11 @@ Security | Policy Management | Guardrails | Audit | Monitoring | Cost Control
 
 # ۶. ارتباط با سایر اسناد (References)
 
-| سند | نوع ارتباط |
+| نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Naming_And_Terminology_Glossary` | مرجع واژه‌نامه و استاندارد نام‌گذاری مورد استفاده در این سند |
+| `Domain_to_Component_and_Deployment_Mapping` | مرجع نگاشت دقیق هر یک از ۱۸ دامنه به واحد استقرار مستقل، به‌ویژه تفکیک زیرسرویس‌های Governance & Platform Services |
+| `Domain_to_Component_and_Deployment_Mapping` | مرجع نگاشت دقیق هر یک از ۱۸ دامنه به واحد استقرار مستقل، شامل دلیل فنی تفکیک یا ادغام سرویس‌ها |
 | `Architecture_Overview_Enterprise_AI_Platform` | نمای کلی معماری که این سند جزئیات کامپوننت‌های آن را تشریح می‌کند |
 | `Vision_and_Strategy` | چشم‌انداز و اصول راهبردی که مرزهای مسئولیت بر اساس آن‌ها تعریف شده است |
 | `High_Level_PRD_Enterprise_AI_Platform` | نیازمندی‌های عملکردی که وظایف هر Component بر اساس آن‌ها مشخص شده است |

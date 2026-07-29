@@ -23,7 +23,7 @@
 
 | اصل | توضیح |
 | :--- | :--- |
-| **Coordinator-driven Orchestration** | هماهنگی بین Agentها توسط یک Agent مرکزی (Orchestrator) مدیریت می‌شود، نه به‌صورت غیرمتمرکز |
+| **Coordinator‑driven Orchestration** | هماهنگی بین Agentها توسط یک Agent مرکزی (Orchestrator) مدیریت می‌شود، نه به‌صورت غیرمتمرکز |
 | **Loose Coupling** | Agentها مستقیماً به یکدیگر وابسته نیستند و از طریق پیام و Context مشترک تعامل می‌کنند |
 | **Tool-first Execution** | هر Agent برای اثرگذاری بر دنیای بیرون، صرفاً از طریق Action & Tool Engine عمل می‌کند، نه با دسترسی مستقیم |
 | **Shared Context** | تمام Agentهای درگیر در یک Task به یک نسخه مشترک از Context دسترسی دارند (بخش ۷) |

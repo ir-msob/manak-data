@@ -450,6 +450,7 @@ Tool Execution
 | سند | ارتباط |
 | :--- | :--- |
 | `Naming_And_Terminology_Glossary` | مرجع واژه‌نامه و استاندارد نام‌گذاری مورد استفاده در این سند |
+| `Plugin_And_Marketplace_Governance_Architecture` | مرجع تخصصی حاکمیت افزونه‌های شخص‌ثالث که الگوی Fail Closed و چارچوب ابزار این سند را برای اکوسیستم باز بسط می‌دهد |
 | `Architecture_Overview_Enterprise_AI_Platform` | نمای کلی معماری که این سند جزئیات مرزهای یکپارچه‌سازی آن را تشریح می‌کند |
 | `Component_Map_And_Responsibilities` | نقشهٔ کامپوننت‌ها و مرزهای مسئولیت که این سند بر اساس آن تعریف شده است |
 | `Component_Design_Knowledge_Context_Engine` | جزئیات طراحی موتور دانش و زمینه که شامل پیاده‌سازی مرز داده و دانش است |

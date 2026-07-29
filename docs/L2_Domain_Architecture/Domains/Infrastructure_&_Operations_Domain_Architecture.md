@@ -513,9 +513,10 @@ Monitoring & Observability
 
 ## ۹. ارتباط با سایر اسناد (References)
 
-| سند | نوع ارتباط |
+| نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Naming_And_Terminology_Glossary` | مرجع واژه‌نامه و استاندارد نام‌گذاری |
+| `Multi_Tenancy_Architecture` | مرجع مدل Resource Quota per-Tenant (بخش ۶ آن سند) که این دامنه در سطح Kubernetes پیاده‌سازی می‌کند |
 | `Domain Landscape` | مرجع دامنه‌های اصلی و جایگاه این دامنه |
 | `Context Map` | مرجع الگوهای تعامل بین دامنه‌ها |
 | `Domain Dependency Map` | مرجع وابستگی‌های این دامنه به سایر دامنه‌ها |
