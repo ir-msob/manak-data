@@ -49,7 +49,8 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **عامل‌ها و هماهنگی** | Agent Orchestration Engine | `agent-orchestration-service` | Microservice مستقل | قلب تصمیم‌گیری سیستم؛ نرخ تغییر بسیار بالا (منطق Planning/Routing به‌مرور توسعه می‌یابد) |
 | **دانش و زمینه** | Knowledge & Context Engine | `knowledge-context-service` | Microservice مستقل | الگوی بار متفاوت (CPU/Memory سنگین برای Embedding)؛ نیاز به Worker مجزا برای Indexing |
-| **حافظه و تجربه** | Memory Management Engine | `memory-service` | Microservice مستقل | الزامات تأخیر پایین (Session Memory) کاملاً متفاوت از الزامات دامنه‌های دیگر؛ نیاز به Cache اختصاصی |
+| **حافظه جلسه (Session)** | Memory Management Engine | `session-memory-service` | Microservice مستقل + Cache (Redis) | نیاز به تأخیر بسیار پایین (< 10ms) و TTL کوتاه؛ مقیاس‌دهی بر اساس تعداد کاربران همزمان. |
+| **حافظه بلندمدت (Long-Term)** | Memory Management Engine | `long-term-memory-service` | Microservice مستقل + Vector/Relational DB | نیاز به جستجوی معنایی، ذخیره‌سازی حجیم و TTL بلندمدت؛ الگوی بار (Batch/Query) کاملاً متفاوت از Session. |
 | **ابزارها و اقدامات** | Action & Tool Engine | `tool-execution-service` (+ `sandbox-runtime` مجزا) | Microservice + Isolated Runtime | نیاز امنیتی به ایزوله‌سازی اجرای Sandbox، مجزا از منطق Registry/Catalog |
 | **مدیریت مدل‌ها** | Model Management Engine | `model-management-service` | Microservice مستقل | نیاز به مدیریت مستقل Provider Adapterها و Fallback؛ چرخه انتشار متفاوت از Orchestration |
 | **مدیریت جریان کار** | Action & Tool Engine (Sub-layer) | `workflow-engine-service` | Microservice مستقل (اما هم‌گروه استقراری با Tool) | طبق اصلاح مرزبندی در `Tool_Domain_Architecture` بخش ۴.۵؛ منطق State Machine پیچیده و نرخ تغییر متفاوت از Execution Engine توجیه‌کننده Service مجزا است، هرچند از نظر Component به همان بلوک تعلق دارد |
@@ -61,6 +62,8 @@
 | **مهندسی داده** | Data Layer (زیرساخت) | `data-pipeline-orchestrator` (+ Spark/Flink Cluster جدا) | Service + Managed Cluster | ماهیت Batch/Streaming کاملاً متفاوت از سرویس‌های Request/Response؛ نیازمند زیرساخت پردازش توزیع‌شده اختصاصی |
 | **یادگیری ماشین** | Model Management Engine (منبع‌دهنده) | `ml-training-platform` (جدا از سرویس Inference) | Service مستقل + GPU Cluster | چرخه عمر کاملاً متفاوت (Batch/Offline) از Model Management که Real-time است |
 | **مدیریت دانش** | Knowledge & Context Engine (Shared Kernel) | `knowledge-graph-service` | Microservice مستقل | مالک انحصاری گراف دانش (طبق اصلاح Shared Kernel)؛ پایگاه داده گرافی اختصاصی نیازمند Service جدا |
+| **مدیریت ویژگی‌ها** | Feature Management Domain (جدید) | `feature-management-service` | Microservice مستقل + Online Cache (Redis) | الگوی بار دوگانه (Batch سنگین برای Offline، و Latency حساس برای Online) توجیه‌کنندهٔ Service جدا با دو زیرساخت متفاوت است. |
+| **مدیریت فراداده و دودمان** | Metadata & Lineage Domain (جدید) | `metadata-lineage-service` | Microservice مستقل + پایگاه داده گرافی (برای Lineage) | نیاز به عنوان مرجع واحد حقیقت برای تمام Schemaها و Lineage؛ مصرف‌شونده توسط مهندسی داده، رویداد و حاکمیت. |
 
 ### ۳.۴. لایه زیرساخت و حاکمیت
 
@@ -69,9 +72,11 @@
 | **هویت و دسترسی** | Governance & Platform Services | `identity-service` | Microservice مستقل، بحرانی | وابستگی بحرانی همه دامنه‌ها؛ SLA بالاتر از میانگین (۹۹.۹۵٪)؛ نیاز به مقیاس‌دهی و Hardening مستقل |
 | **امنیت و حریم خصوصی** | Governance & Platform Services | `security-service` (Encryption/Secrets) + Library مشترک (DLP/Masking تزریق‌شده در سایر Serviceها) | Service + Shared Library | بخشی از این دامنه (KMS/Secrets) باید Service مستقل باشد؛ بخشی دیگر (Masking Logic) باید به‌صورت Library در همه سرویس‌ها تزریق شود، نه یک Service مرکزی که هر درخواست از آن عبور کند (گلوگاه عملکردی) |
 | **حاکمیت و انطباق** | Governance & Platform Services | `policy-engine-service` (PDP) + PEP به‌صورت Library/Sidecar در هر Service | Service + Sidecar Pattern | طبق معماری PDP/PEP خودِ سند `Governance_&_Compliance_Domain_Architecture`؛ PDP مرکزی است اما PEP باید توزیع‌شده باشد |
+| **حسابرسی (Audit)** | Governance & Platform Services | `audit-service` | Microservice مستقل | نیاز به ذخیره‌سازی غیرقابل‌تغییر (WORM Storage)، امضای دیجیتال و دوره نگهداری طولانی (۱ سال) برای انطباق (Compliance)؛ الگوی بار و الزامات امنیتی متفاوت از Logging و Policy Engine. |
 | **زیرساخت و عملیات** | زیرساخت (Kubernetes) | زیرساخت پایه (Cluster, CI/CD) — **نه یک Business Service** | Platform Infrastructure | این دامنه بستر اجرای همه Serviceهای دیگر است، خودش یک Service کسب‌وکاری نیست |
-| **مشاهده‌پذیری** | Governance & Platform Services | Observability Stack (Prometheus/Loki/Tempo) — **نه یک Business Service** | Platform Infrastructure | ماهیت Cross-Cutting؛ هر Service یک Agent/Exporter محلی دارد، نه فراخوانی به یک Service مرکزی برای هر عملیات |
-| **هوش مصنوعی مسئولانه** | Governance & Platform Services | `responsible-ai-service` (عمدتاً Batch/Async) | Microservice سبک + Scheduled Job | حجم تعامل Real-time پایین است (عمدتاً ارزیابی دوره‌ای و Human-in-the-Loop)؛ نیازی به مقیاس‌دهی هم‌تراز با Orchestration ندارد |
+| **مشاهده‌پذیری (Logging/Metrics)** | زیرساخت (Observability Stack) | Observability Stack (Elasticsearch/Loki برای Logs، Prometheus برای Metrics) — **نه یک Business Service** | Platform Infrastructure | ماهیت Cross-Cutting؛ Logging به‌عنوان یک زیرساخت عملیاتی در نظر گرفته شده و جدا از Audit Service مدیریت می‌شود. |
+| **هوش مصنوعی مسئولانه** | Governance & Platform Services | `responsible-ai-service` (سبک) | Microservice سبک + Scheduled Job (با قابلیت ادغام در آینده) | حجم تعامل Real-time پایین است؛ در صورت نیاز به کاهش هزینه‌های عملیاتی، می‌تواند به‌عنوان کتابخانه در Governance ادغام شود. در حال حاضر به‌عنوان سرویس مستقل برای وضوح مسئولیت‌ها نگهداری می‌شود. |
+| **درخواست‌های موضوع داده** | Governance & Platform Services | `data-subject-request-service` | Microservice مستقل | نیاز به ذخیره‌سازی اختصاصی برای ردیابی درخواست‌ها و گزارش‌ها؛ چرخه عمر مستقل از سایر سرویس‌ها |
 
 ---
 
@@ -91,7 +96,7 @@
 
 بر اساس جدول بالا، تخمین اولیه تعداد **Business Microservice مستقل** برای MVP و توسعه Enterprise به شرح زیر است (این عدد صرفاً راهنمای برنامه‌ریزی ظرفیت تیم است، نه الزام قطعی):
 
-- ۱۳ Business Microservice مستقل
+- ۱۷ Business Microservice مستقل
 - ۲ Data/ML Platform (با زیرساخت Cluster اختصاصی)
 - ۳ Cross-Cutting Infrastructure Layer (زیرساخت، مشاهده‌پذیری، بخشی از امنیت/حاکمیت به‌صورت Sidecar)
 

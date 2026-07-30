@@ -46,6 +46,8 @@
 | **Message Broker** | از کار افتادن | بالا (High) | صف پایدار (Durable Queue) که پیام را تا بازیابی سرویس نگه می‌دارد |
 | **لایه داده (Data Layer — Storage)** | خرابی | بالا (High) | تکرار داده (Replication) در چند نسخه |
 | **Governance & Platform Services (Identity Service)** | از کار افتادن | بحرانی (Critical) | حالت محدود فقط‑خواندنی (Read-only Mode) تا بازیابی کامل سرویس هویت |
+| **Workflow Engine (جبران)** | شکست عملیات جبرانی (Compensation Failure) | بحرانی (Critical) | استفاده از Dead Letter Queue برای ذخیره درخواست‌های جبرانی ناموفق، Retry با Backoff طولانی، ارسال هشدار Critical به تیم عملیات، و فراهم‌سازی رابط مدیریتی برای مداخله دستی. همچنین ثبت کامل خطاها برای تحلیل ریشه‌ای. |
+| **Action & Tool Engine** | شکست در Tool با `compensation_capability = NON_COMPENSABLE` | بالا (High) | اعمال `non_compensable_failure_policy` مطابق با تنظیمات Tool. در صورت `ABORT_WORKFLOW`، گردش‌کار با وضعیت `FAILED` پایان می‌یابد و خطا ثبت می‌شود. در صورت `HUMAN_ESCALATION`، گردش‌کار به وضعیت `WAITING_MANUAL_INTERVENTION` می‌رود و هشدار ارسال می‌شود. |
 
 > ستون «تأثیر» بر اساس اثر خرابی روی کاربر نهایی تعیین شده: **بحرانی** یعنی توقف کامل قابلیت اصلی سیستم (مثلاً احراز هویت)، **بالا** یعنی اختلال گسترده در تجربه کاربر، **متوسط** یعنی افت کیفیت بدون توقف کامل سرویس.
 

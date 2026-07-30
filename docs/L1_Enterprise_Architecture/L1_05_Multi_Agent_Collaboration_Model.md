@@ -39,7 +39,7 @@
 | :--- | :--- | :--- |
 | **Orchestrator Agent** | دریافت Task، مدیریت کل چرخه همکاری و تصمیم‌گیری نهایی | Agent Orchestration Engine |
 | **Planner Agent** | شکستن Task پیچیده به مراحل کوچک‌تر (Task Decomposition) | Agent Orchestration Engine |
-| **Knowledge Agent** | درخواست بازیابی دانش و Context موردنیاز | Knowledge & Context Engine |
+| **Knowledge Agent** | درخواست بازیابی دانش و Context موردنیاز (شامل داده‌های گراف دانش) | Knowledge & Context Engine (به‌عنوان تنها واسط مجاز برای دسترسی به گراف دانش) |
 | **Tool Agent** | شناسایی و انتخاب Tool مناسب برای هر مرحله از Catalog | Action & Tool Engine |
 | **Execution Agent** | اجرای واقعی Tool یا Workflow انتخاب‌شده | Action & Tool Engine |
 | **Reviewer Agent** | اعتبارسنجی نتیجه اجرا پیش از تحویل نهایی یا مرحله بعد | Agent Orchestration Engine |
@@ -77,7 +77,7 @@ User Request → Planning → Agent Assignment → Parallel Execution → Result
 
 ---
 
-# ۵. پروتکل ارتباطی (Communication Protocol)
+## ۵. پروتکل ارتباطی (Communication Protocol)
 
 هر پیام بین Agentها شامل فیلدهای زیر است:
 
@@ -91,6 +91,8 @@ User Request → Planning → Agent Assignment → Parallel Execution → Result
 | **Priority** | اولویت پردازش پیام |
 | **Status** | وضعیت جاری (Pending، In Progress، Completed، Failed) |
 | **Timestamp** | زمان ارسال پیام؛ ورودی Audit & Traceability (بخش ۱۰) |
+| **User Identity** | هویت کاربر اصلی که این Task به نمایندگی از او انجام می‌شود (شامل `user_id` و `user_token` در صورت نیاز برای اعتبارسنجی مجدد) |
+| **Service Identity** | هویت سرویس یا Agent فرستنده (برای ممیزی و احراز هویت سرویس‌به‌سرویس) |
 
 **امنیت ارتباطی (Communication Security):**
 
@@ -98,6 +100,7 @@ User Request → Planning → Agent Assignment → Parallel Execution → Result
 - هر پیام حاوی امضای دیجیتال (Digital Signature) Agent فرستنده برای تأیید اصالت است.
 - احراز هویت متقابل (Mutual Authentication) بین Agentها از طریق توکن‌های کوتاه‌مدت (Short-lived Tokens) انجام می‌شود.
 - تمام پیام‌ها از مسیر Governance & Platform Services عبور می‌کنند و در Audit Log ثبت می‌شوند.
+- هویت کاربر اصلی (`User Identity`) در تمام پیام‌های بین Agentها منتقل می‌شود تا مجوزدهی در هر مرحله بر اساس هویت اصلی انجام شود.
 
 ---
 

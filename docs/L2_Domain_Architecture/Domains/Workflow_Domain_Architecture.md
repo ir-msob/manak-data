@@ -98,7 +98,12 @@
       "type": "task",
       "name": "بارگذاری سند",
       "action": "document_upload",
-      "next": "step-2"
+      "next": "step-2",
+      "on_failure": {
+        "retry_count": 2,
+        "retry_delay_seconds": 5,
+        "fallback_action": "abort"
+      }
     },
     {
       "id": "step-2",
@@ -109,6 +114,10 @@
       "next_condition": {
         "approved": "step-3",
         "rejected": "step-4"
+      },
+      "on_failure": {
+        "retry_count": 0,
+        "fallback_action": "compensate"
       }
     },
     {
@@ -116,21 +125,39 @@
       "type": "task",
       "name": "انتشار سند",
       "action": "document_publish",
-      "next": "step-5"
+      "next": "step-5",
+      "on_failure": {
+        "retry_count": 1,
+        "retry_delay_seconds": 10,
+        "fallback_action": "compensate"
+      }
     },
     {
       "id": "step-4",
       "type": "task",
       "name": "ارسال بازخورد به نویسنده",
       "action": "send_feedback",
-      "next": "step-5"
+      "next": "step-5",
+      "on_failure": {
+        "retry_count": 3,
+        "retry_delay_seconds": 5,
+        "fallback_action": "compensate"
+      }
     },
     {
       "id": "step-5",
       "type": "end",
       "name": "پایان گردش‌کار"
     }
-  ]
+  ],
+  "on_failure": {
+    "global_compensation": true,
+    "compensation_timeout_seconds": 300,
+    "compensation_retry_policy": {
+      "max_retries": 3,
+      "backoff_seconds": 30
+    }
+  }
 }
 ```
 
@@ -147,6 +174,89 @@
 - ارتباط هر نمونه با نسخه مشخصی از تعریف گردش‌کار
 - مدیریت متغیرها و داده‌های اختصاصی هر نمونه
 - مدیریت شناسه کسب‌وکاری (Business Key) برای رهگیری فرآیندهای سازمانی
+
+---
+
+#### ۴.۱.۲. Workflow پیش‌فرض: حذف داده‌های کاربر (Data Deletion Workflow)
+
+این Workflow به‌عنوان یک Workflow سیستمی و از پیش تعریف‌شده در پلتفرم وجود دارد و توسط سرویس `Data Subject Request Service` فراخوانی می‌شود.
+
+```json
+{
+  "workflow_id": "wf-deletion",
+  "name": "حذف کامل داده‌های کاربر",
+  "version": "1.0",
+  "description": "این Workflow تمام داده‌های یک کاربر را از تمام لایه‌ها حذف یا ناشناس می‌کند.",
+  "steps": [
+    {
+      "id": "step-1",
+      "type": "task",
+      "name": "حذف Session Memory",
+      "action": "memory.delete_session_memory",
+      "next": "step-2"
+    },
+    {
+      "id": "step-2",
+      "type": "task",
+      "name": "حذف Long-Term Memory",
+      "action": "memory.delete_long_term_memory",
+      "next": "step-3"
+    },
+    {
+      "id": "step-3",
+      "type": "task",
+      "name": "حذف Knowledge Base",
+      "action": "knowledge.delete_user_knowledge",
+      "next": "step-4"
+    },
+    {
+      "id": "step-4",
+      "type": "task",
+      "name": "حذف Knowledge Graph",
+      "action": "knowledge_graph.delete_user_entities",
+      "next": "step-5"
+    },
+    {
+      "id": "step-5",
+      "type": "task",
+      "name": "ناشناس‌سازی Audit Logs",
+      "action": "audit.anonymize_user_logs",
+      "next": "step-6"
+    },
+    {
+      "id": "step-6",
+      "type": "task",
+      "name": "ناشناس‌سازی Application Logs",
+      "action": "logging.anonymize_user_logs",
+      "next": "step-7"
+    },
+    {
+      "id": "step-7",
+      "type": "task",
+      "name": "حذف Feature Store",
+      "action": "feature.delete_user_features",
+      "next": "step-8"
+    },
+    {
+      "id": "step-8",
+      "type": "task",
+      "name": "حذف Tool Execution History",
+      "action": "tool.delete_user_history",
+      "next": "step-9"
+    },
+    {
+      "id": "step-9",
+      "type": "end",
+      "name": "پایان فرایند حذف"
+    }
+  ],
+  "on_failure": {
+    "global_compensation": false,
+    "alert_ops": true,
+    "fallback_status": "Failed"
+  }
+}
+```
 
 ---
 
@@ -170,38 +280,43 @@
 
 ---
 
-### ۴.۳. State Manager (مدیر وضعیت)
+### ۴.۳. State Manager (مدیر وضعیت) - با قابلیت Event Sourcing
 
-**مسئولیت:** مدیریت پایدار و قابل اعتماد وضعیت هر گردش‌کار و گام‌های آن.
+**مسئولیت:** مدیریت پایدار و قابل اعتماد وضعیت هر گردش‌کار و گام‌های آن، به‌همراه ذخیره‌سازی تاریخچه کامل رویدادهای اجرا برای پشتیبانی از عملیات جبران و بازگشت.
 
 **وظایف کلیدی:**
 
-- **ذخیره‌سازی وضعیت:** ذخیره وضعیت جاری هر گردش‌کار (Running, Paused, Completed, Failed)
-- **ذخیره‌سازی گام‌ها:** ذخیره وضعیت هر گام (Pending, In Progress, Completed, Failed, Skipped)
-- **ذخیره‌سازی داده‌های میانی:** ذخیره داده‌های تولیدشده در هر گام برای استفاده در گام‌های بعدی
-- **بازیابی وضعیت:** بازیابی وضعیت گردش‌کار در صورت خرابی سیستم برای ادامه از همان نقطه
-- **مدیریت تاریخچه:** نگهداری تاریخچه کامل تغییرات وضعیت برای ممیزی و تحلیل
-- **مدیریت قفل:** جلوگیری از اجرای هم‌زمان یک گردش‌کار توسط چندین نمونه
+- **ذخیره‌سازی وضعیت جاری:** وضعیت فعلی گردش‌کار (Running, Paused, Completed, Failed, Compensating, Compensated) و هر گام.
+- **ذخیره‌سازی تاریخچه رویدادها (Event Log):** ثبت ترتیبی تمام رویدادهای مهم در طول اجرا، مانند:
+    - `StepStarted(step_id, timestamp)`
+    - `StepCompleted(step_id, result, timestamp)`
+    - `StepFailed(step_id, error, timestamp)`
+    - `StepCompensated(step_id, timestamp)`
+    - `CompensationFailed(step_id, error, timestamp)`
+- **بازیابی وضعیت:** امکان بازسازی وضعیت جاری و لیست گام‌های موفق از روی تاریخچه رویدادها، برای ادامه اجرا یا شروع جبران.
+- **مدیریت قفل:** جلوگیری از اجرای هم‌زمان یک گردش‌کار توسط چندین نمونه.
 
-**فیلدهای کلیدی وضعیت گردش‌کار:**
+**فیلدهای کلیدی وضعیت گردش‌کار (به‌روزرسانی‌شده):**
 
 | فیلد                          | توضیح |
 |:------------------------------| :--- |
 | `workflow_instance_id`        | شناسه یکتای نمونه گردش‌کار |
 | `workflow_definition_id`      | شناسه تعریف گردش‌کار |
 | `version`                     | نسخه تعریف گردش‌کار |
-| `status`                      | وضعیت (Running, Paused, Completed, Failed, Canceled) |
-| `current_step_id`             | شناسه گام فعلی |
+| `status`                      | وضعیت (Running, Paused, Completed, Failed, Compensating, Compensated, COMPENSATION_FAILED) |
+| `current_step_id`             | شناسه گام فعلی (در صورت در حال اجرا) |
 | `steps`                       | لیست گام‌ها با وضعیت و داده‌های هرکدام |
 | `variables`                   | متغیرهای سراسری گردش‌کار |
 | `started_at`                  | زمان شروع |
-| `completed_at`                | زمان پایان |
+| `completed_at`                | زمان پایان (در صورت اتمام) |
 | `updated_at`                  | زمان آخرین به‌روزرسانی |
 | `tenant_id`                   | شناسه مستأجر |
 | `created_by`                  | کاربر یا سیستم شروع‌کننده |
-| `business_key`                | شناسه کسب‌وکاری جهت تطبیق رویدادها و رهگیری فرآیند   |
-| `correlation_id`              | شناسه ارتباط بین درخواست‌ها، رویدادها و عملیات مرتبط |
-| `parent_workflow_instance_id` | شناسه گردش‌کار والد در صورت اجرای Sub Workflow       |
+| `business_key`                | شناسه کسب‌وکاری جهت تطبیق رویدادها |
+| `correlation_id`              | شناسه ارتباط بین درخواست‌ها |
+| `parent_workflow_instance_id` | شناسه گردش‌کار والد |
+| **`event_log`**               | **لیست رویدادهای اجرا (JSON array) برای پشتیبانی از جبران** |
+| **`compensation_status`**     | **وضعیت جبران (NotStarted, InProgress, Completed, Failed)** |
 
 
 ---
@@ -273,51 +388,102 @@
 
 ---
 
-### ۴.۶. Error Handling & Recovery (مدیریت خطا و بازیابی)
+### ۴.۵.۲. بازیابی دستی گردش‌کارهای COMPENSATION_FAILED
 
-**مسئولیت:** مدیریت خطاها در گردش‌کارهای چندمرحله‌ای با مکانیزم‌های Retry، Rollback و Compensation.
+برای گردش‌کارهایی که به وضعیت `COMPENSATION_FAILED` رسیده‌اند، یک رابط مدیریتی (Admin UI) با قابلیت‌های زیر فراهم می‌شود:
+
+- **مشاهده درخواست‌های DLQ:** نمایش لیست درخواست‌های جبرانی ناموفق با جزئیات کامل (شناسه گردش‌کار، گام، Tool، پیام خطا، تعداد Retry).
+- **Retry دستی عملیات جبرانی:** امکان اجرای مجدد عملیات جبرانی برای یک گام خاص.
+- **لغو دستی گردش‌کار:** امکان خاتمه گردش‌کار با ثبت دلیل در Audit Log.
+- **ادامه گردش‌کار:** در صورت امکان، ادامه گردش‌کار از نقطه شکست (با تأیید اپراتور).
+
+تمامی عملیات انجام‌شده از طریق این رابط، باید در Audit Log با شناسه اپراتور ثبت شوند.
+
+---
+
+### ۴.۶. Error Handling & Recovery (مدیریت خطا و بازیابی) - با پشتیبانی از Orchestrated Saga
+
+**مسئولیت:** مدیریت خطاها در گردش‌کارهای چندمرحله‌ای با استفاده از الگوی **Orchestrated Saga**، شامل مکانیزم‌های Retry، Rollback (از طریق Compensation) و مدیریت شرایط بحرانی.
 
 **وظایف کلیدی:**
 
-- **تشخیص خطا:** شناسایی خطا در هر گام گردش‌کار
-- **Retry:** تلاش مجدد با Exponential Backoff برای خطاهای موقت
-- **Rollback:** بازگشت به وضعیت پایدار قبل از گام خطا (در صورت پشتیبانی)
-- **Compensation Action:** اجرای اقدامات جبرانی برای جبران اثر گام‌های قبلی در صورت شکست
-- **Error Escalation:** ارجاع خطا به انسان یا تیم عملیات در صورت عدم امکان بازیابی خودکار
-- **ثبت خطا:** ثبت کامل خطاها برای تحلیل و بهبود
-- **Idempotency Check:** جلوگیری از اجرای مجدد عملیات در صورت دریافت درخواست یا رویداد تکراری
-- **Dead Letter Handling:** انتقال درخواست‌های غیرقابل پردازش به صف خطا جهت بررسی بعدی
+- **تشخیص خطا:** شناسایی خطا در هر گام گردش‌کار بر اساس کد خطای بازگشتی از Tool یا Timeout.
+- **Retry:** تلاش مجدد با Exponential Backoff برای خطاهای موقت (مطابق با `on_failure.retry_count` در تعریف گام).
+- **شروع جبران (Compensation):** در صورت غیرقابل بازیابی بودن خطا (یا پس از اتمام Retry)، Orchestrator مسئول آغاز فرایند جبران به‌صورت معکوس (از گام شکست‌خورده به عقب) است.
+    - **مراحل جبران:**
+        1. تعیین لیست گام‌های موفق قبلی با استفاده از `event_log` در State Manager.
+        2. پیمایش معکوس لیست و برای هر گام:
+            - بررسی `compensable` بودن در Tool Registry.
+            - اگر `compensable: true`، فراخوانی `compensation_action` از طریق Execution Engine.
+            - ثبت نتیجه (موفق یا ناموفق) در `event_log`.
+            - در صورت موفقیت، وضعیت گام به `Compensated` تغییر می‌کند.
+            - در صورت شکست عملیات جبرانی، به بخش "مدیریت شکست در حین جبران" مراجعه کنید.
+        3. پس از اتمام جبران تمام گام‌ها، وضعیت گردش‌کار به `Failed_Compensated` تغییر می‌یابد.
+- **مدیریت شکست در حین جبران (Failure during Compensation):**
+    - اگر عملیات جبرانی یک گام با خطا مواجه شود، Orchestrator نباید بی‌نهایت Retry کند.
+    - **راهکار:** عملیات جبرانی را در یک **Dead Letter Queue (DLQ)** قرار داده و یک **Scheduler** مجزا برای Retry با Backoff طولانی‌تر (مثلاً هر ۱ ساعت) در نظر بگیرید.
+    - به‌طور هم‌زمان، یک **هشدار Critical** به تیم عملیات ارسال شود تا به‌صورت دستی وضعیت را بررسی کنند، زیرا داده‌ها در وضعیت نیمه‌جبران‌شده (Semi-compensated) باقی مانده‌اند.
+    - گردش‌کار در وضعیت `COMPENSATION_FAILED` قرار می‌گیرد و امکان مداخله دستی (از طریق رابط کاربری مدیریت) برای ادامه یا لغو دستی فراهم می‌شود.
+- **مدیریت Toolهای غیرقابل جبران (NON_COMPENSABLE):**
+    - در صورت شکست یک Tool با `compensation_capability = NON_COMPENSABLE`، Orchestrator باید `non_compensable_failure_policy` را اعمال کند:
+        - `ABORT_WORKFLOW`: گردش‌کار بدون شروع جبران، با وضعیت `FAILED` پایان می‌یابد و خطا ثبت می‌شود.
+        - `CONTINUE_WITH_WARNING`: گردش‌کار با وضعیت `COMPLETED_WITH_WARNINGS` ادامه می‌یابد و خطا در Audit Log ثبت می‌شود.
+        - `HUMAN_ESCALATION`: گردش‌کار به وضعیت `WAITING_MANUAL_INTERVENTION` می‌رود و هشدار برای مداخله دستی ارسال می‌شود.
+- **ثبت خطا:** ثبت کامل خطاها، تلاش‌های جبران، و نتایج برای تحلیل و بهبود.
+- **Idempotency Check:** جلوگیری از اجرای مجدد عملیات در صورت دریافت درخواست یا رویداد تکراری (با استفاده از `correlation_id`).
+- **Transaction Boundary:** هر Tool خودش مسئول Atomicity عملیات داخلی خود است. Workflow Engine فقط ترتیب و جبران را در سطح کلان مدیریت می‌کند و از مدل **Eventual Consistency** پیروی می‌کند.
 
-**الگوی Compensation (اقدام جبرانی):**
+**الگوی Compensation (اقدام جبرانی) - مثال کامل:**
 
 ```text
-Step 1: Create Issue (Jira)
+Step 1: Create Issue (Jira)  → موفق
         │
         ▼
-Step 2: Assign to Developer
+Step 2: Assign to Developer  → موفق
         │
         ▼
-Step 3: Update Database
+Step 3: Update Database      → شکست (غیرقابل Retry)
         │
         ▼
-[ERROR] Step 3 Failed
+شروع جبران (Reverse Saga):
+        │
+        ├── جبران Step 2: Unassign Issue → موفق
+        │
+        ├── جبران Step 1: Close/Delete Issue → موفق
         │
         ▼
-Compensation Actions:
+وضعیت نهایی: Failed_Compensated
+```
+Dead Letter Queue برای جبران ناموفق:
+
+```text
+اگر جبران Step 2 با خطا مواجه شود:
         │
-        ├── Rollback Database Change
+        ├── قرار دادن درخواست جبران در DLQ
         │
-        ├── Unassign Issue
+        ├── ارسال هشدار Critical به تیم عملیات
         │
-        └── Close Issue (or Mark as Failed)
+        ├── وضعیت گردش‌کار: CompensationFailed (نیازمند مداخله دستی)
         │
-        ▼
-Compensation Completed → Workflow Failed
+        └── Scheduler هر ۱ ساعت Retry از DLQ
 ```
 
 ---
 
-### ۴.۷. Workflow Monitoring & Observability (پایش گردش‌کار)
+### ۴.۷. محدوده تراکنش و مدل سازگاری (Transaction Boundary & Consistency Model)
+
+در پلتفرم، از مدل **Eventual Consistency** در سطح دامنه‌ها و گردش‌کارهای چندمرحله‌ای استفاده می‌شود. این به این معناست که:
+
+- **هیچ تراکنش توزیع‌شده با قفل توزیع‌شده (مانند Two-Phase Commit) استفاده نمی‌شود.** هر Tool (یا گام) مسئول تضمین Atomicity عملیات داخلی خود بر روی یک منبع داده است.
+- **مرز تراکنش (Transaction Boundary) دقیقاً در همان گام Tool تعریف می‌شود.** برای مثال، یک Tool که یک رکورد را در پایگاه داده به‌روزرسانی می‌کند، باید از تراکنش‌های محلی (مانند BEGIN/COMMIT) برای تضمین یکپارچگی داده خود استفاده کند.
+- **Workflow Engine فقط توالی و جبران را در سطح کلان مدیریت می‌کند** و هیچ دانشی از وضعیت داخلی تراکنش‌های هر Tool ندارد.
+- **در صورت شکست یک گام، جبران از طریق عملیات جبرانی (Compensation) انجام می‌شود** که وضعیت را به حالت قبل از اجرای گام‌های موفق بازمی‌گرداند (تا جایی که ممکن باشد).
+
+**سناریوهای نیازمند Consistency قوی (استثنا):** در مواردی که چندین منبع داده باید به‌صورت هماهنگ به‌روزرسانی شوند (مثلاً به‌روزرسانی همزمان دو پایگاه داده)، این عملیات باید درون یک Tool واحد و با استفاده از تراکنش محلی (در صورت امکان) یا با طراحی خاص (مانند الگوی Transactional Outbox) انجام شود. Workflow Engine چنین سناریوهایی را به‌عنوان یک گام اتمی در نظر می‌گیرد و جبران آن را نیز در همان Tool تعریف می‌کند.
+
+---
+
+### ۴.۸. Workflow Monitoring & Observability (پایش گردش‌کار)
 
 **مسئولیت:** پایش وضعیت، پیشرفت و سلامت گردش‌کارها.
 

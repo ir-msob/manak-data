@@ -159,7 +159,8 @@
 | **عامل‌ها و هماهنگی** | **ابزارها و اقدامات** | **Open Host Service** | Downstream → Upstream | اجرای Tool، وضعیت اجرا |
 | **عامل‌ها و هماهنگی** | **حافظه و تجربه** | **Open Host Service** | Downstream → Upstream | ذخیره/بازیابی Memory |
 | **عامل‌ها و هماهنگی** | **مدیریت جریان کار** | **Open Host Service** | Downstream → Upstream | اجرای Workflow، وضعیت |
-| **عامل‌ها و هماهنگی** | **مدیریت دانش** | **Open Host Service** | Downstream → Upstream | پرس‌وجوی گراف دانش |
+| **عامل‌ها و هماهنگی** | **دانش و زمینه** | **Open Host Service** | Downstream → Upstream | درخواست داده‌های گراف دانش (غیرمستقیم) |
+| **دانش و زمینه** | **مدیریت دانش** | **Conformist** | Downstream → Upstream | پرس‌وجوی گراف دانش، مدیریت نسخه و Fallback |
 | **دانش و زمینه** | **مهندسی داده** | **Conformist** | Downstream → Upstream | داده‌های نمایه‌شده، فراداده |
 | **دانش و زمینه** | **مدیریت دانش** | **Shared Kernel** | دوسویه | مدل‌های دانش، موجودیت‌ها |
 | **حافظه و تجربه** | **مدیریت دانش** | **Conformist** | Downstream → Upstream | الگوهای تجربی، حقایق |
@@ -177,6 +178,11 @@
 | **یادگیری ماشین** | **مهندسی داده** | **Open Host Service** | Downstream → Upstream | داده‌های آموزشی، ویژگی‌ها |
 | **یادگیری ماشین** | **زیرساخت و عملیات** | **Conformist** | Downstream → Upstream | منابع GPU/CPU |
 | **مدیریت دانش** | **مهندسی داده** | **Open Host Service** | Downstream → Upstream | هستان‌شناسی، روابط |
+| **مدیریت ویژگی‌ها** | **مهندسی داده** | **Conformist** | Downstream → Upstream | داده‌های خام و پردازش‌شده برای محاسبهٔ ویژگی |
+| **یادگیری ماشین** | **مدیریت ویژگی‌ها** | **Open Host Service** | Downstream → Upstream | دریافت ویژگی برای آموزش (Batch) و استنتاج (Online) |
+| **مهندسی داده** | **مدیریت فراداده و دودمان** | **Conformist** | Downstream → Upstream | ثبت Schema خطوط لوله و ارسال Lineage پردازش |
+| **رویداد و Webhook** | **مدیریت فراداده و دودمان** | **Conformist** | Downstream → Upstream | ثبت Schema رویدادها و اعتبارسنجی نسخه‌ها |
+| **حاکمیت و انطباق** | **مدیریت فراداده و دودمان** | **Open Host Service** | Downstream → Upstream | دریافت Lineage و Metadata برای ممیزی |
 
 ---
 
@@ -210,6 +216,11 @@
 | **ذخیره Memory** | عامل‌ها و هماهنگی | حافظه و تجربه | نوع Memory، داده، Metadata | JSON / Protobuf |
 | **بازیابی Memory** | عامل‌ها و هماهنگی | حافظه و تجربه | شناسه، نوع، فیلترها | JSON / Protobuf |
 | **احراز هویت** | همه دامنه‌ها | هویت و دسترسی | اعتبارنامه، توکن | JWT / OAuth2 |
+| **ثبت/دریافت Schema** | مهندسی داده / رویداد و Webhook | مدیریت فراداده و دودمان | نام Schema، نسخه، محتوای Schema (JSON/Avro) | REST / gRPC |
+| **اعتبارسنجی Compatibility** | رویداد و Webhook | مدیریت فراداده و دودمان | شناسه Schema، نسخهٔ جدید | REST / gRPC |
+| **درخواست ویژگی (Online)** | یادگیری ماشین | مدیریت ویژگی‌ها | نام ویژگی‌ها، شناسه موجودیت | REST / gRPC |
+| **درخواست ویژگی (Batch)** | یادگیری ماشین | مدیریت ویژگی‌ها | نام ویژگی‌ها، بازه زمانی | Parquet / Spark |
+| **ارسال دادهٔ خام** | مهندسی داده | مدیریت ویژگی‌ها | داده‌های جدول، Streaming | Kafka / Event |
 
 ---
 

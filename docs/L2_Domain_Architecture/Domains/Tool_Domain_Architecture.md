@@ -104,6 +104,13 @@
 | `supports_streaming` | پشتیبانی از خروجی جریانی |
 | `supports_async` | پشتیبانی از اجرای غیرهمزمان |
 | `deprecated_at` | زمان منسوخ شدن ابزار |
+| **`compensation_capability`** | **قابلیت جبران (COMPENSABLE \| NON_COMPENSABLE \| READ_ONLY)** |
+| **`non_compensable_failure_policy`** | **سیاست در صورت شکست Tool غیرقابل جبران (ABORT_WORKFLOW \| CONTINUE_WITH_WARNING \| HUMAN_ESCALATION)** |
+| **`compensation_retry_policy`** | **سیاست Retry برای عملیات جبرانی شامل `max_retries` (پیش‌فرض ۳) و `backoff_seconds` (پیش‌فرض ۳۰)** |
+| **`compensable`** | **آیا ابزار قابلیت جبران (Compensation) دارد؟ (boolean)** |
+| **`compensation_action`** | **نام عملیات جبرانی (مثلاً `tool_name.compensate`) - در صورت `compensable: true` اجباری است** |
+| **`compensation_params_mapping`** | **نگاشت پارامترهای عملیات جبرانی از خروجی عملیات اصلی یا ورودی‌های اولیه (JSON object)** |
+| **`is_compensation_idempotent`** | **آیا عملیات جبرانی Idempotent است؟ (پیش‌فرض: true)** |
 
 ---
 
@@ -177,6 +184,9 @@ Tool Execution
         │   Normalize Result
         │        │
         │        ▼
+        │   Include compensation_status in response
+        │        │
+        │        ▼
         │   Publish Event
         │        │
         │        ▼
@@ -188,8 +198,48 @@ Tool Execution
         Retry / Timeout / Circuit Breaker
                  │
                  ▼
-        Failure Event
+        Failure Event with compensation_status
 ```
+
+−−−
+
+#### ۴.۳.۱. پشتیبانی از عملیات جبرانی (Compensation Execution)
+
+Execution Engine مسئول اجرای عملیات جبرانی (`compensate`) درخواستی از سوی Workflow Engine است. این عملیات باید با رعایت اصول زیر انجام شود:
+
+- **Idempotency:** عملیات جبرانی باید به‌گونه‌ای پیاده‌سازی شود که اجرای مجدد آن (در صورت Retry) عوارض جانبی جدیدی ایجاد نکند. این ویژگی در Tool Registry با فیلد `is_compensation_idempotent` مشخص می‌شود.
+- **عدم وابستگی به وضعیت جلسه:** عملیات جبرانی نباید به Context یا Session Memory جاری وابسته باشد و باید صرفاً بر اساس پارامترهای ارسال‌شده (که از خروجی عملیات اصلی یا ورودی‌های اولیه استخراج می‌شوند) عمل کند.
+- **ثبت کامل:** تمام فراخوانی‌های عملیات جبرانی (موفق و ناموفق) باید با جزئیات کامل در Audit Log ثبت شوند.
+
+**جریان فراخوانی جبران:**
+
+```text
+Workflow Engine
+        │
+        ▼
+Execution Engine دریافت درخواست compensate
+        │
+        ├── اعتبارسنجی Tool (وجود compensation_action)
+        │
+        ├── آماده‌سازی پارامترها بر اساس compensation_params_mapping
+        │
+        ├── اجرای عملیات جبرانی (با همان محدودیت‌های امنیتی و Sandbox)
+        │
+        ├── ثبت نتیجه در Audit Log (شامل شناسه گردش‌کار و گام مرتبط)
+        │
+        ▼
+بازگرداندن نتیجه به Workflow Engine
+```
+
+---
+
+### ۴.۳.۲. الزامات پاسخ اجرای Tool
+
+پاسخ هر درخواست اجرای Tool باید شامل فیلد `compensation_status` با یکی از مقادیر زیر باشد:
+
+- `AVAILABLE`: عملیات جبرانی برای این Tool تعریف شده و قابل اجرا است.
+- `NOT_SUPPORTED`: این Tool فاقد عملیات جبرانی است (NON_COMPENSABLE یا READ_ONLY).
+- `FAILED`: عملیات جبرانی برای این Tool تعریف شده اما در زمان اجرا با شکست مواجه شده است.
 
 ---
 

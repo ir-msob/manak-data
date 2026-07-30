@@ -83,6 +83,9 @@
 | BR‑004 | حداقل دسترسی | امنیت | همه دامنه‌ها | هر کاربر، سرویس یا Agent فقط به حداقل منابع و داده‌های لازم برای انجام وظیفه خود دسترسی دارد. | `IF (requested_resource not in [user_allowed_resources]) THEN (reject with 403 Forbidden)` | بالا | تأییدشده |
 | BR‑005 | رمزنگاری داده‌های حساس | امنیت | همه دامنه‌ها | تمام داده‌های با طبقه‌بندی «محرمانه» و «بسیار محرمانه» باید در حالت ذخیره و انتقال رمزنگاری شوند. | `IF (data_classification IN ["Confidential", "Highly Confidential"]) THEN (encryption_required = TRUE)` | بحرانی | تأییدشده |
 | BR‑006 | ثبت تلاش‌های ناموفق | امنیت | همه دامنه‌ها | تمام تلاش‌های ناموفق برای احراز هویت یا دسترسی باید ثبت و قابل ممیزی باشند. | `IF (authentication_failed OR authorization_failed) THEN (log_to_audit = TRUE)` | بالا | تأییدشده |
+| BR‑076 | ثبت عملیات جبرانی برای Toolهای پرریسک | ابزارها | ابزارها و اقدامات، مدیریت جریان کار | هر Tool با سطح ریسک "High" یا "Critical" که دارای اثر جانبی تغییردهنده وضعیت در سیستم خارجی است (`compensation_capability != READ_ONLY`) باید قابلیت جبران (`compensation_capability = COMPENSABLE`) داشته باشد. | `IF (tool_risk_level IN ["High", "Critical"] AND compensation_capability != "READ_ONLY") THEN (compensation_capability = "COMPENSABLE", compensation_action IS NOT NULL)` | بالا | پیشنهادی |
+| BR‑077 | Idempotency عملیات جبرانی | ابزارها | ابزارها و اقدامات | عملیات جبرانی هر Tool باید Idempotent باشد تا در صورت Retry، عوارض جانبی جدید ایجاد نشود. | `IF (compensable = TRUE) THEN (is_compensation_idempotent = TRUE)` | بحرانی | پیشنهادی |
+| BR‑078 | حداکثر زمان جبران گردش‌کار | مدیریت جریان کار | مدیریت جریان کار | کل فرایند جبران یک گردش‌کار نباید از زمان مشخصی (مثلاً ۵ دقیقه) تجاوز کند. در غیر این صورت، وضعیت به "COMPENSATION_FAILED" تغییر کرده و نیاز به مداخله دستی دارد. در صورت شکست عملیات جبرانی، گردش‌کار به وضعیت `COMPENSATION_FAILED` رفته و Dead Letter Queue فعال می‌شود. حداکثر زمان انتظار برای بازیابی دستی، ۷۲ ساعت است که پس از آن گردش‌کار به‌صورت خودکار بایگانی می‌شود. | `IF (compensation_duration > COMPENSATION_TIMEOUT) THEN (status = "COMPENSATION_FAILED", alert_ops = TRUE, enqueue_to_dlq = TRUE)` | بالا | پیشنهادی |
 
 ---
 
@@ -96,6 +99,13 @@
 | BR‑010 | یکتایی داده | حاکمیت داده | مهندسی داده | هر موجودیت باید یک بار و بدون تکرار ذخیره شود. | `IF (duplicate_detected) THEN (reject_or_merge_data = TRUE)` | متوسط | تأییدشده |
 | BR‑011 | مستندسازی فراداده | حاکمیت داده | مهندسی داده | هر مجموعه داده باید دارای فراداده کامل (مالک، منبع، تاریخ ایجاد، طبقه‌بندی) باشد. | `IF (metadata_incomplete) THEN (log_warning = TRUE, processing_pending = TRUE)` | متوسط | تأییدشده |
 | BR‑012 | حذف امن داده | حاکمیت داده | مهندسی داده | داده‌های حذف‌شده باید با روش‌های امن (Secure Deletion) حذف شوند و قابل بازیابی نباشند. | `IF (delete_requested AND classification IN ["Confidential", "Highly Confidential"]) THEN (secure_delete = TRUE)` | بالا | تأییدشده |
+| BR‑079 | حق حذف داده | حاکمیت داده | همه دامنه‌ها | کاربران حق دارند درخواست حذف کامل داده‌های شخصی خود را ارائه دهند. | `IF (user_requests_deletion) THEN (start_deletion_workflow = TRUE)` | بحرانی | پیشنهادی |
+| BR‑080 | دوره Soft Delete | حاکمیت داده | همه دامنه‌ها | داده‌های حذف‌شده باید به‌مدت ۳۰ روز در حالت Soft Delete باقی بمانند تا امکان لغو درخواست وجود داشته باشد. | `IF (soft_delete_date + 30 days < current_date) THEN (start_hard_delete = TRUE)` | بالا | پیشنهادی |
+| BR‑081 | ناشناس‌سازی Audit Logs | حاکمیت داده | حاکمیت و انطباق | Audit Logs هرگز به‌طور کامل حذف نمی‌شوند، اما شناسه کاربر در آن‌ها ناشناس می‌شود. | `IF (user_deletion_requested) THEN (anonymize_user_id_in_audit = TRUE, keep_audit_record = TRUE)` | بحرانی | پیشنهادی |
+| BR‑082 | گزارش تأیید حذف | حاکمیت داده | حاکمیت و انطباق | پس از اتمام فرایند حذف، یک گزارش تأیید به کاربر و تیم انطباق ارسال می‌شود. | `IF (deletion_completed) THEN (send_confirmation_report = TRUE)` | بالا | پیشنهادی |
+| BR‑083 | Idempotency عملیات حذف | حاکمیت داده | همه دامنه‌ها | تمام عملیات حذف داده باید Idempotent باشند تا در صورت Retry، عوارض جانبی جدید ایجاد نشود. | `IF (deletion_action_called) THEN (idempotency_check = TRUE)` | بحرانی | پیشنهادی |
+| BR‑084 | تعیین راهکار برای Toolهای غیرقابل جبران | ابزارها | ابزارها و اقدامات، مدیریت جریان کار | در صورت شکست یک Tool با `compensation_capability = NON_COMPENSABLE`، Orchestrator باید `non_compensable_failure_policy` را اعمال کند. | `IF (compensation_capability == "NON_COMPENSABLE" AND execution_failed) THEN (apply non_compensable_failure_policy)` | بالا | پیشنهادی |
+| BR‑085 | ثبت شکست عملیات جبرانی | ابزارها | ابزارها و اقدامات، مدیریت جریان کار، حاکمیت و انطباق | در صورت شکست عملیات جبرانی، خطا باید در Audit Log ثبت، هشدار Critical ارسال، و درخواست به Dead Letter Queue منتقل شود. | `IF (compensation_action_failed) THEN (log_to_audit = TRUE, send_critical_alert = TRUE, enqueue_to_dlq = TRUE)` | بحرانی | پیشنهادی |
 
 ---
 
@@ -109,6 +119,10 @@
 | BR‑016 | امتیاز اطمینان دانش | مدیریت دانش | دانش و زمینه | هر واحد دانش باید دارای امتیاز اطمینان (Confidence Score) باشد که بر اساس منبع و کیفیت استخراج محاسبه می‌شود. | `confidence_score = calculate(source_reliability, extraction_quality, validation_results)` | متوسط | تأییدشده |
 | BR‑017 | به‌روزرسانی دانش | مدیریت دانش | دانش و زمینه | دانش باید پس از هر تغییر در منبع اصلی، به‌روزرسانی شود. | `IF (source_updated) THEN (knowledge_update = TRUE, reindex = TRUE)` | بالا | تأییدشده |
 | BR‑018 | حذف دانش منسوخ | مدیریت دانش | دانش و زمینه | دانشی که منبع آن حذف شده یا نسخه جدیدی از آن موجود است، باید منسوخ شود. | `IF (source_deleted OR new_version_exists) THEN (mark_deprecated = TRUE)` | متوسط | تأییدشده |
+| BR‑086 | دوره انسوخ‌سازی هستان‌شناسی | مدیریت دانش | مدیریت دانش، دانش و زمینه | هر نسخه Major از هستان‌شناسی که منسوخ می‌شود، باید حداقل ۶ ماه قبل از حذف، به‌عنوان Deprecated اعلام شود. | `IF (ontology_version_deprecated) THEN (deprecation_period >= 6 months, notify_consumers = TRUE)` | بالا | پیشنهادی |
+| BR‑087 | پشتیبانی از نسخه‌های گراف دانش | مدیریت دانش | دانش و زمینه | موتور دانش و زمینه باید حداقل از ۲ نسخه Major اخیر گراف دانش پشتیبانی کند. | `IF (knowledge_context_engine_active) THEN (supported_graph_versions >= 2 major versions)` | بالا | پیشنهادی |
+| BR‑088 | Fallback در صورت عدم تطابق نسخه گراف دانش | مدیریت دانش | دانش و زمینه | در صورت عدم تطابق نسخه گراف دانش، موتور دانش و زمینه باید به‌طور خودکار به نسخه پایدار قبلی Fallback کند. | `IF (graph_version_mismatch) THEN (fallback_to_previous_stable_version = TRUE, log_warning = TRUE)` | بالا | پیشنهادی |
+| BR‑089 | دسترسی انحصاری به گراف دانش از طریق موتور دانش | مدیریت دانش | دانش و زمینه، عامل‌ها و هماهنگی | تمام درخواست‌های مربوط به داده‌های گراف دانش (از جمله از سوی Agentها) باید منحصراً از طریق موتور دانش و زمینه (`Knowledge & Context Engine`) انجام شود. دسترسی مستقیم Agentها یا هر دامنه‌ی دیگری به Graph Query Service ممنوع است. | `IF (agent_or_component_requests_graph_directly) THEN (reject_request = TRUE, log_violation = TRUE)` | بحرانی | پیشنهادی |
 
 ---
 

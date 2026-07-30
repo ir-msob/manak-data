@@ -199,7 +199,9 @@ Context، Agent، Tool، Memory و Knowledge به‌عنوان عناصر اصل
 
 ## ۴.۶ Memory Management Engine (موتور مدیریت حافظه)
 
-**مسئولیت اصلی:** مدیریت وضعیت، تجربیات و اطلاعات تاریخی موردنیاز سیستم برای حفظ Context و بهبود عملکرد آینده. Memory در این معماری یک مفهوم منطقی است که می‌تواند روی انواع Storage پیاده‌سازی شود.
+**مسئولیت اصلی:** مدیریت وضعیت، تجربیات و اطلاعات تاریخی موردنیاز سیستم برای حفظ Context و بهبود عملکرد آینده.
+
+> **توجه استقرار:** این موتور به‌عنوان یک مفهوم منطقی واحد طراحی شده، اما در عمل به دو زیرساخت مجزا تفکیک می‌شود: **`session-memory`** (با استفاده از Redis/Cache برای تأخیر بسیار کم) و **`long-term-memory`** (با استفاده از پایگاه داده رابطه‌ای و برداری برای جستجوی معنایی و ماندگاری بالا).
 
 **قابلیت‌های کلیدی:**
 
@@ -317,13 +319,13 @@ Authentication، Authorization، Identity Management، Role-Based Access Control
 
 تعریف و اجرای قوانین و محدودیت‌های سیستم؛ مشخص می‌کند چه کسی به چه منابعی دسترسی دارد، چه Toolهایی قابل استفاده‌اند، چه Actionهایی نیاز به Approval دارند و چه داده‌هایی قابل استفاده توسط مدل هستند. شامل Access Policy، Data Policy، AI Usage Policy، Tool Execution Policy، Guardrail Rules، Compliance Rules.
 
-## ۶.۳ Audit Service
+## ۶.۳ Audit Service (سرویس حسابرسی - مستقل)
 
-ثبت فعالیت کاربران، تصمیم‌های Agentها، اجرای Toolها و تغییرات مهم؛ نگهداری Execution History و Traceability عملیات برای اهداف امنیتی، نظارتی و Compliance.
+**مسئولیت:** ثبت غیرقابل‌تغییر و امضا‌شدهٔ رویدادهای کسب‌وکاری و امنیتی (تصمیمات Agent، اجرای Toolهای حساس، تغییرات دسترسی) برای اهداف انطباق (Compliance) و ممیزی. این سرویس به‌عنوان یک **میکروسرویس مستقل (`audit-service`)** با ذخیره‌سازی WORM (Write Once Read Many) و دوره نگهداری حداقل ۱ سال پیاده‌سازی می‌شود.
 
-## ۶.۴ Logging Service
+## ۶.۴ Logging Service (زیرساخت لاگ‌نویسی - غیرمستقل)
 
-جمع‌آوری و مدیریت Application Logs، Error Logs، Debug Logs؛ Distributed Logging، Log Aggregation و Log Search.
+**مسئولیت:** جمع‌آوری و مدیریت لاگ‌های عملیاتی (Application Logs، Error Logs، Debug Logs) برای عیب‌یابی و مشاهده‌پذیری (Observability). این قابلیت به‌عنوان **بخشی از زیرساخت پلتفرم (مانند Elasticsearch یا Loki)** پیاده‌سازی می‌شود و یک سرویس کسب‌وکاری مستقل محسوب نمی‌شود. لاگ‌ها دوره نگهداری کوتاه‌تری (حداکثر ۳۰ روز) دارند و برای جستجوی سریع بهینه‌سازی شده‌اند.
 
 ## ۶.۵ Monitoring & Observability Service
 

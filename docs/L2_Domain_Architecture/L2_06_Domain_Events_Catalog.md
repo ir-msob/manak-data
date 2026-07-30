@@ -86,14 +86,15 @@
 
 ### ۶.۱. رویدادهای دامنه دانش و زمینه (Knowledge & Context Domain)
 
-| شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| شناسه   | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
+|:--------| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | EVT-001 | **DocumentIngested** | v1.0 | دانش و زمینه | مهندسی داده، عامل‌ها و هماهنگی | دریافت یک سند جدید از طریق Connector | یک سند با موفقیت دریافت و برای پردازش آماده شد. | `document_id`, `source_type`, `content_hash`, `metadata`, `tenant_id` | غیرهمزمان |
 | EVT-002 | **DocumentProcessed** | v1.0 | دانش و زمینه | مهندسی داده | تکمیل پردازش اولیه یک سند (استخراج متن، Chunking) | سند پردازش و به قطعات قابل پردازش (Chunk) تقسیم شد. | `document_id`, `chunk_count`, `processing_time_ms`, `status` | غیرهمزمان |
 | EVT-003 | **KnowledgeIndexed** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی، حافظه و تجربه | تولید Embedding و ذخیره در Vector Database | یک واحد دانش (Knowledge) با موفقیت در پایگاه داده برداری نمایه (Index) شد. | `knowledge_id`, `chunk_id`, `embedding_version`, `source_document_id` | غیرهمزمان |
 | EVT-004 | **ContextAssembled** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی | درخواست ساخت Context توسط Orchestration Engine | Context مناسب برای یک درخواست خاص مونتاژ و آماده ارسال به مدل شد. | `context_id`, `correlation_id`, `knowledge_ids`, `size_tokens`, `assembly_time_ms` | همزمان |
 | EVT-005 | **KnowledgeUpdated** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی، حافظه و تجربه | تغییر در منبع اصلی دانش (ویرایش سند) | یک واحد دانش موجود به‌روزرسانی شد. | `knowledge_id`, `version`, `updated_fields`, `source_version` | غیرهمزمان |
 | EVT-006 | **KnowledgeDeprecated** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی، حاکمیت و انطباق | حذف منبع یا انقضای اعتبار دانش | یک واحد دانش منسوخ و غیرقابل استفاده شد. | `knowledge_id`, `deprecation_reason`, `replaced_by_id` | غیرهمزمان |
+| EVT-007 | **OntologyVersionPublished** | v1.0 | مدیریت دانش | دانش و زمینه، حاکمیت و انطباق | انتشار یک نسخه جدید از هستان‌شناسی | نسخه جدید هستان‌شناسی با تغییرات Major/Minor منتشر شد و مصرف‌کنندگان باید از آن مطلع شوند. | `ontology_id`, `new_version`, `deprecated_version`, `release_notes`, `deprecation_date`, `compatibility_notes` | غیرهمزمان |
 
 ---
 
@@ -130,6 +131,7 @@
 | EVT-019 | **ToolExecutionSucceeded** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حافظه و تجربه، مشاهده‌پذیری | تکمیل موفقیت‌آمیز اجرای Tool | یک Tool با موفقیت اجرا و نتیجه آن بازگردانده شد. | `execution_id`, `tool_id`, `result`, `duration_ms`, `output_size` | غیرهمزمان |
 | EVT-020 | **ToolExecutionFailed** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حافظه و تجربه، مشاهده‌پذیری | بروز خطا در حین اجرای Tool | اجرای یک Tool با خطا مواجه شد. | `execution_id`, `tool_id`, `error_code`, `error_message`, `retry_count` | غیرهمزمان |
 | EVT-021 | **ToolDeprecated** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حاکمیت و انطباق | منسوخ‌شدن یک Tool بر اساس Policy یا تغییر نیازمندی | یک Tool از چرخه استفاده خارج شد. | `tool_id`, `deprecation_reason`, `replaced_by_id`, `deprecated_at` | غیرهمزمان |
+| EVT-026 | **CompensationFailed** | v1.0 | مدیریت جریان کار | مشاهده‌پذیری، حاکمیت و انطباق، عملیات | شکست در عملیات جبرانی یک گام گردش‌کار | عملیات جبرانی با وجود Retry موفق نشد و گردش‌کار نیاز به مداخله دستی دارد. | `workflow_instance_id`, `step_id`, `tool_id`, `error_message`, `retry_count`, `dlq_reference` | غیرهمزمان |
 
 ---
 

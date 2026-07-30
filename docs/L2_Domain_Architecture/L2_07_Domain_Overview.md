@@ -135,7 +135,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **عامل‌ها (Agent)** | `Agent` | مدیریت چرخه حیات Agentها، هماهنگی بین Agentها، تصمیم‌گیری هوشمند، تحلیل Intent و Planning | Orchestrator، Planner، Reviewer | دانش و زمینه، حافظه و تجربه، ابزارها، مدیریت مدل‌ها، مدیریت جریان کار |
 | **دانش و زمینه** | `Knowledge-Context` | مدیریت چرخه عمر دانش سازمانی، تولید Embedding، جستجوی معنایی، مونتاژ Context | Ingestion، Indexing، Retrieval، RAG | مهندسی داده، مدیریت دانش، حافظه و تجربه |
-| **حافظه و تجربه** | `Memory-Experience` | مدیریت حافظه کوتاه‌مدت (Session)، بلندمدت (Long-Term) و رویدادمحور (Episodic) | Session Memory، Long-Term Memory، Experience Store | عامل‌ها، دانش و زمینه، مدیریت دانش |
+| **حافظه و تجربه** | `Memory-Experience` | مدیریت حافظه کوتاه‌مدت (Session)، بلندمدت (Long-Term) و رویدادمحور (Episodic) - **که در سطح استقرار به دو سرویس مجزا تفکیک می‌شوند.** | Session Memory (Online Cache)، Long-Term Memory (Vector/Relational)، Experience Store | عامل‌ها، دانش و زمینه، مدیریت دانش |
 | **ابزارها (Tool)** | `Tool` | مدیریت و اجرای امن Toolها و Workflowها در سیستم‌های خارجی | Tool Registry، Execution Engine، Sandbox | عامل‌ها، مدیریت جریان کار، هویت و دسترسی |
 | **مدیریت مدل‌ها** | `Model-Management` | مدیریت اتصال، انتخاب و مسیریابی مدل‌های هوش مصنوعی (LLM، Embedding، Reranking) | Model Registry، Router، Provider Adapter | یادگیری ماشین، عامل‌ها، مشاهده‌پذیری |
 | **مدیریت جریان کار** | `Workflow` | مدیریت فرآیندهای چندمرحله‌ای و گردش‌کارهای سازمانی | Workflow Engine، State Manager | عامل‌ها، ابزارها، حافظه و تجربه |
