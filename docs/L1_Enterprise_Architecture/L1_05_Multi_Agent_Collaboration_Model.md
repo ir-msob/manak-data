@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # سند مدل همکاری چند-Agent (Multi-Agent Collaboration Model)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.2
+**نسخه:** 1.4
 
-**وضعیت:** پیش‌نویس بازبینی‌شده
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -114,6 +113,8 @@ User Request → Planning → Agent Assignment → Parallel Execution → Result
 | **Event-Driven** | Agentها بر اساس وقوع Event فعال می‌شوند، نه فراخوانی مستقیم |
 | **Consensus** | چند Agent مستقل روی یک تصمیم واحد به توافق می‌رسند (برای تصمیم‌های حساس یا نامطمئن) |
 
+> **یادداشت مرزبندی:** تعامل بین دامنه «عامل‌ها و هماهنگی» و دامنه «مدیریت جریان کار» (Workflow) از این الگوهای داخلی مستثناست و طبق قاعده مستقل تعریف‌شده در `Domain_Dependency_Map` (بخش ۶.۱، رفع Cycle 3) مدیریت می‌شود: Agent Orchestration Engine می‌تواند به‌صورت همزمان یک Workflow را آغاز کند، اما واگذاری گام از Workflow به یک Agent همواره از طریق رویداد (`AgentTaskRequested`) و به‌صورت غیرهمزمان انجام می‌شود، نه از طریق یکی از الگوهای این جدول.
+
 ---
 
 # ۷. Context مشترک (Shared Context)
@@ -126,12 +127,13 @@ Agentها به منابع زیر دسترسی دارند:
 - **Policies:** محدودیت‌های Governance قابل اعمال روی Task جاری
 - **Tool Catalog:** فهرست Toolهای در دسترس برای اجرای زیرمراحل
 
-**همگام‌سازی و انتشار Context (Context Synchronization & Propagation):**
+**همگام‌سازی، انتشار و مالکیت Context (Context Synchronization, Propagation & Ownership):**
 
-- Context مشترک در یک حافظه مرکزی موقت (Transient Context Store) نگهداری می‌شود.
-- هر Agent در لحظه شروع پردازش، یک snapshot از Context دریافت می‌کند.
+- Context مشترک در یک حافظه مرکزی موقت (Transient Context Store) نگهداری می‌شود. **مالکیت پیاده‌سازی و استقرار این فروشگاه به‌طور رسمی به `session-memory-service` (زیرمجموعه دامنه حافظه و تجربه) واگذار شده است**؛ جزئیات کامل مدل داده و همزمانی در سند `Memory_&_Experience_Domain_Architecture` (بخش ۴.۱.۱ — Shared Agent Context Store) آمده است.
+- هر Agent در لحظه شروع پردازش، یک Snapshot از Context به‌همراه شماره نسخه (`context_version`) دریافت می‌کند.
 - تغییرات اعمال‌شده توسط هر Agent، از طریق رویدادهای Context Update به سایر Agentهای مرتبط منتشر می‌شود.
-- برای حفظ یکپارچگی، نسخه‌گذاری Context (Context Versioning) انجام می‌شود تا از بازنویسی ناخواسته جلوگیری شود.
+- برای حفظ یکپارچگی در نوشتن هم‌زمان چند Agent، از مدل **Optimistic Concurrency Control** (مقایسه و جایگزینی نسخه) استفاده می‌شود تا از بازنویسی ناخواسته (Lost Update) جلوگیری شود؛ در صورت تعارض، فقط Orchestrator Agent مجاز به Merge نهایی است.
+- هدف SLA همگام‌سازی Context، کمتر از ۲۰۰ میلی‌ثانیه است (بخش ۱۱).
 
 ---
 
@@ -145,6 +147,8 @@ Agentها به منابع زیر دسترسی دارند:
 4. **Confidence Score** — تصمیم Agent با بالاترین امتیاز اطمینان
 5. **Majority Consensus** — رأی اکثریت در الگوی Consensus
 6. **Retry / Escalation** — در صورت عدم حل تعارض، تلاش مجدد یا ارجاع به سطح بالاتر
+
+> **توجه:** این اولویت‌بندی مربوط به تعارض تصمیم‌های منطقی/کسب‌وکاری بین Agentهاست و مستقل از تعارض نوشتن هم‌زمان روی Shared Context است (که با Optimistic Concurrency Control در بخش ۷ حل می‌شود).
 
 ---
 
@@ -173,15 +177,24 @@ Agentها به منابع زیر دسترسی دارند:
 
 # ۱۱. اهداف کارایی همکاری (Collaboration SLA)
 
-این اهداف، مکمل جدول کارایی عمومی در سند `Non_Functional_Requirements_And_SLA` هستند و مختص عملیات داخلی هماهنگی چند-Agent‌اند:
+این اهداف، مکمل جدول کارایی عمومی در سند `Non_Functional_Requirements_And_SLA` هستند و مختص عملیات داخلی هماهنگی چند‑Agent‌اند:
 
 | نیازمندی | هدف |
 | :--- | :--- |
 | **Agent Dispatch** | کمتر از ۱۰۰ میلی‌ثانیه |
 | **Internal Messaging** | کمتر از ۵۰ میلی‌ثانیه |
-| **Planner** | کمتر از ۱ ثانیه |
+| **Planner Decomposition** | کمتر از ۱ ثانیه |
 | **Result Aggregation** | کمتر از ۵۰۰ میلی‌ثانیه |
-| **Context Synchronization** | کمتر از ۲۰۰ میلی‌ثانیه (زمان انتشار تغییرات Context بین Agentها) |
+| **Context Synchronization** | کمتر از ۲۰۰ میلی‌ثانیه (زمان انتشار تغییرات Context بین Agentها، از طریق Shared Agent Context Store در `session-memory-service`) |
+| **Shared Agent Context Read** | کمتر از ۱۰ میلی‌ثانیه (زمان خواندن از Shared Agent Context Store) |
+| **Shared Agent Context Write** | کمتر از ۲۰ میلی‌ثانیه (زمان نوشتن در Shared Agent Context Store با Optimistic Concurrency Control) |
+| **Orchestrator Decision** | کمتر از ۵۰۰ میلی‌ثانیه (زمان تصمیم‌گیری Orchestrator در هر مرحله) |
+| **Agent Lifecycle (Create/Activate)** | کمتر از ۲۰۰ میلی‌ثانیه (زمان ایجاد و فعال‌سازی یک Agent جدید) |
+| **Agent Task Timeout (پیش‌فرض)** | ۶۰ ثانیه (حداکثر زمان اجرای هر Agent Task قبل از لغو) |
+| **Agent Task Timeout (Planner)** | ۳۰ ثانیه |
+| **Agent Task Timeout (Knowledge)** | ۱۰ ثانیه |
+| **Agent Task Timeout (Tool/Execution)** | ۶۰ ثانیه |
+| **Acknowledgment Timeout** | ۵ ثانیه (حداکثر زمان انتظار برای تأیید دریافت از Agent Orchestration Engine) |
 
 ---
 
@@ -189,7 +202,7 @@ Agentها به منابع زیر دسترسی دارند:
 
 - **افزایش تعداد Agentها:** با رشد پیچیدگی Taskها، تعداد Agentهای همکار افزایش می‌یابد. Orchestrator Agent باید توانایی مدیریت حداقل ۲۰ Agent همزمان در یک Task واحد را داشته باشد.
 - **افزایش هم‌زمانی (Concurrency):** پلتفرم باید بتواند حداقل ۱۰۰ Task هم‌زمان با ساختار چند-Agent را مدیریت کند.
-- **مقیاس‌پذیری افقی Agentها:** Agentهای پرمصرف (مانند Knowledge Agent و Execution Agent) باید قابلیت مقیاس‌پذیری افقی مستقل داشته باشند تا از ایجاد گلوگاه در هماهنگی جلوگیری شود.
+- **مقیاس‌پذیری افقی Agentها:** Agentهای پرمصرف (مانند Knowledge Agent و Execution Agent) باید قابلیت مقیاس‌پذیری افقی مستقل داشته باشند تا از ایجاد گلوگاه در هماهنگی جلوگیری شود. Shared Agent Context Store (میزبانی‌شده در `session-memory-service`) نیز باید متناسب با این رشد، مستقل مقیاس‌دهی شود.
 
 ---
 
@@ -203,11 +216,13 @@ Agentها به منابع زیر دسترسی دارند:
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع کنترل دسترسی (بخش ۸) و Human-in-the-Loop اشاره‌شده در بخش‌های ۲ و ۸ این سند |
 | `Non_Functional_Requirements_And_SLA` | مرجع اهداف کارایی و در دسترس‌پذیری عمومی که SLA بخش ۱۱ مکمل آن است |
 | `Governance_And_Platform_Services_Design` | مرجع پیاده‌سازی حاکمیت، Audit و کنترل هزینه اشاره‌شده در بخش ۱۰ این سند |
+| `Memory_&_Experience_Domain_Architecture` | مرجع مالکیت پیاده‌سازی، مدل داده و مدل همزمانی Shared Agent Context Store (بخش ۴.۱.۱ آن سند) که مفهوم منطقی بخش ۷ همین سند را پیاده‌سازی می‌کند |
+| `Domain_Dependency_Map` | مرجع رفع رسمی چرخه وابستگی عامل‌ها ↔ مدیریت جریان کار (Cycle 3، بخش ۶.۱) که یادداشت بخش ۶ همین سند به آن ارجاع می‌دهد |
 
 ---
 
 # ۱۴. نتیجه‌گیری
 
-این سند چارچوب همکاری چند-Agent را به‌صورت جامع تعریف می‌کند. با استفاده از نقش‌های مشخص، الگوهای هماهنگی استاندارد و پروتکل ارتباطی امن، پلتفرم قادر خواهد بود Taskهای پیچیده را به‌صورت مؤثر بین Agentهای تخصصی توزیع کرده و نتایج قابل اعتمادی تولید کند. رعایت اصول حاکمیت، مشاهده‌پذیری و مدیریت خطا، اجرای همکاری چند-Agent را در محیط‌های سازمانی امن و قابل کنترل می‌سازد.
+این سند چارچوب همکاری چند-Agent را به‌صورت جامع تعریف می‌کند. با استفاده از نقش‌های مشخص، الگوهای هماهنگی استاندارد، مالکیت روشن Shared Context و پروتکل ارتباطی امن، پلتفرم قادر خواهد بود Taskهای پیچیده را به‌صورت مؤثر بین Agentهای تخصصی توزیع کرده و نتایج قابل اعتمادی تولید کند. رعایت اصول حاکمیت، مشاهده‌پذیری و مدیریت خطا، اجرای همکاری چند-Agent را در محیط‌های سازمانی امن و قابل کنترل می‌سازد.
 
 </div>

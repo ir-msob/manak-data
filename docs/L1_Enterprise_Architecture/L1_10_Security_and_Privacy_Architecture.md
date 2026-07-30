@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # معماری امنیت و حریم خصوصی (Security and Privacy Architecture)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.1
+**نسخه:** 1.2
 
-**وضعیت:** پیش‌نویس بازبینی‌شده
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -63,6 +62,7 @@
 | **رمزنگاری پیش‌فرض (Encryption by Default)** | تمام داده‌ها در حالت ذخیره (Data at Rest) و در حال انتقال (Data in Transit) با الگوریتم‌های استاندارد و کلیدهای امن رمزنگاری می‌شوند. |
 | **حریم خصوصی از بدو طراحی (Privacy by Design)** | جمع‌آوری، پردازش و نگهداری داده‌های شخصی و حساس با رعایت اصول حداقل‌سازی داده، شفافیت، هدف‌مندی و حق حذف/اصلاح انجام می‌شود. |
 | **قابلیت مشاهده و پاسخ‌دهی (Observability & Responsiveness)** | سیستم باید قابلیت تشخیص، ثبت و واکنش به رویدادهای امنیتی را در زمان واقعی داشته باشد. |
+| **Shared Kernel برای هویت و امنیت** | مفاهیم پایه هویت (User, Role, Permission) و سیاست‌های امنیتی (Policy, Rule) به‌عنوان یک هسته مشترک (Shared Kernel) بین دامنه‌های «هویت و دسترسی» و «امنیت و حریم خصوصی» تعریف می‌شوند تا وابستگی چرخه‌ای بین این دو دامنه برطرف گردد. این Shared Kernel در `Data_Model_And_Knowledge_Schema_Overview` (بخش ۶) تعریف شده است. |
 
 ---
 
@@ -160,7 +160,7 @@
 
 Agentها همانند کاربران دارای هویت و نقش مشخص هستند. مجوزهای هر Agent بر اساس وظیفه آن تعیین می‌شود و به‌صورت پویا قابل تغییر است. Agentها نمی‌توانند مجوزهای بالاتر از محدوده تعیین‌شده کسب کنند.
 
-−−−
+---
 
 ### ۷.۴. مجوزدهی در سرویس‌های پایین‌دستی (Downstream Authorization)
 
@@ -283,6 +283,8 @@ Agentها همانند کاربران دارای هویت و نقش مشخص ه�
 | **دوره نگهداری** | لاگ‌ها بر اساس نیازهای قانونی و سازمانی (معمولاً حداقل ۱ سال برای لاگ‌های امنیتی) نگهداری می‌شوند. |
 | **حفاظت از داده‌های حساس** | لاگ‌ها نباید حاوی اطلاعات حساس (مانند رمز عبور، توکن‌ها، داده‌های شخصی) باشند. در صورت لزوم، این اطلاعات باید Mask شوند. |
 
+> **تفکیک Audit Service و Logging Service:** Audit Logs (گزارش‌های حسابرسی) و Logs عملیاتی (Operational Logs) دو موجودیت مجزا با الزامات متفاوت هستند. Audit Logs توسط `audit-service` که یک میکروسرویس مستقل با ذخیره‌سازی WORM و امضای دیجیتال است، مدیریت می‌شوند. Logs عملیاتی به‌عنوان بخشی از زیرساخت Observability (مانند Elasticsearch یا Loki) پیاده‌سازی می‌شوند و یک سرویس مستقل کسب‌وکاری محسوب نمی‌شوند. برای جزئیات بیشتر به `Governance_&_Compliance_Domain_Architecture` (بخش ۴.۴) و `Observability_Domain_Architecture` (بخش ۴.۲) مراجعه کنید.
+
 **پیاده‌سازی:** Audit Service (بخش ۶.۳ از `Architecture_Overview_Enterprise_AI_Platform`)
 
 ---
@@ -346,11 +348,12 @@ Agentها همانند کاربران دارای هویت و نقش مشخص ه�
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع Componentها و لایه‌های معماری که کنترل‌های امنیتی روی آن‌ها اعمال می‌شود (بخش ۴). |
 | `Component_Map_And_Responsibilities` | مرجع مسئولیت Componentها در پیاده‌سازی کنترل‌های امنیتی (بخش ۴). |
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع کامل Identity & Access Framework (بخش ۸)، Data Masking و Tool Security که در بخش‌های ۷ و ۱۱ این سند به آن‌ها ارجاع داده شده است. |
-| `Data_Model_And_Knowledge_Schema_Overview` | مرجع فیلدهای Security Classification و Permission که در بخش ۸.۱ این سند برای طبقه‌بندی داده استفاده می‌شود. |
+| `Data_Model_And_Knowledge_Schema_Overview` | مرجع فیلدهای Security Classification و Permission که در بخش ۸.۱ این سند برای طبقه‌بندی داده استفاده می‌شود. همچنین مرجع Shared Kernel برای مفاهیم پایه هویت و سیاست امنیتی که در بخش ۴ به آن اشاره شده است. |
 | `Non_Functional_Requirements_And_SLA` | مرجع اهداف Availability، Security، Audit و Disaster Recovery که این سند کنترل‌های دستیابی به آن‌ها را مشخص می‌کند. |
 | `Risk_And_Failure_Mode_Analysis` | مرجع تحلیل ریسک و سناریوهای خرابی که تهدیدات شناسایی‌شده در بخش ۶ این سند بر اساس آن‌ها اولویت‌بندی می‌شوند. |
 | `API_Contract_Overview` | مرجع امنیت API (بخش ۹) که کنترل‌های Rate Limiting، Authentication و Authorization در بخش ۱۰ این سند با آن هم‌راستا هستند. |
-| `Architecture_Decisions_Log` | مرجع تصمیمات معماری مرتبط با امنیت (مانند انتخاب OAuth2، Zero Trust، Multi-Tenancy) که این سند بر اساس آن‌ها شکل گرفته است. |
+| `Architecture_Decisions_Log` | مرجع تصمیمات معماری مرتبط با امنیت (مانند انتخاب OAuth2، Zero Trust، Multi-Tenancy، Shared Kernel) که این سند بر اساس آن‌ها شکل گرفته است. |
+| `Governance_&_Compliance_Domain_Architecture` | مرجع تفصیلی Audit Service و تمایز آن با Logging که در بخش ۱۳ به آن اشاره شده است. |
 
 ---
 

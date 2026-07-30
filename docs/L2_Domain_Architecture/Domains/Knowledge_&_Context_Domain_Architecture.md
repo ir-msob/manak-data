@@ -4,9 +4,9 @@
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.0
+**نسخه:** 1.3
 
-**وضعیت:** پیش‌نویس
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -37,6 +37,7 @@
 - **RAG (Retrieval-Augmented Generation):** بازیابی دانش برای تولید پاسخ
 - **Data Versioning:** نسخه‌بندی و رهگیری تغییرات دانش
 - **Knowledge Lifecycle Management:** مدیریت چرخه عمر دانش (ایجاد، به‌روزرسانی، انقضا، حذف)
+- **Graph Version Management:** مدیریت نسخه‌های گراف دانش و Fallback خودکار در صورت عدم تطابق
 
 جزئیات پیاده‌سازی فنی و کدنویسی در اسناد سطح پایین‌تر تدوین می‌شوند. این سند صرفاً **معماری سطح بالا و اصول طراحی** دامنه را تعریف می‌کند.
 
@@ -59,6 +60,7 @@
 | **Knowledge Reusability (قابلیت استفاده مجدد)** | دانش استخراج‌شده باید مستقل از سناریوی استفاده ذخیره شود تا در کاربردهای مختلف مجدداً قابل استفاده باشد. |
 | **Explainable Retrieval (بازیابی قابل تبیین)** | دلیل انتخاب هر بخش از دانش باید قابل نمایش باشد تا امکان بررسی و اعتماد به پاسخ فراهم شود. |
 | **Model Agnostic Knowledge (استقلال از مدل)** | ساختار دانش و Context نباید وابسته به یک مدل زبانی خاص باشد و باید برای مدل‌های مختلف قابل استفاده باشد. |
+| **Graph Version Management (مدیریت نسخه گراف دانش)** | این دامنه باید نسخه گراف دانش مصرفی را مدیریت کرده و در صورت عدم تطابق، به‌طور خودکار Fallback به نسخه پایدار قبلی انجام دهد. |
 
 ---
 
@@ -248,7 +250,7 @@
 **وظایف این دامنه در ارتباط با گراف دانش:**
 
 - **درخواست پرس‌وجو:** ارسال پرس‌وجوهای گراف (بر اساس نیاز Retrieval) به `Graph Query Service` تعریف‌شده در دامنه مدیریت دانش. **الزام:** هر درخواست باید شامل `graph_version` مشخص باشد (نسخه‌ای که موتور دانش و زمینه با آن سازگار است).
-- **مدیریت نسخه در سمت مصرف‌کننده:** موتور دانش و زمینه باید در پیکربندی خود، لیست نسخه‌های پشتیبانی‌شده از گراف دانش را داشته باشد. در صورت دریافت خطای `VERSION_MISMATCH` از Graph Query Service، باید به‌طور خودکار به یک نسخه پایدار قبلی که پشتیبانی می‌کند، Fallback کند.
+- **مدیریت نسخه در سمت مصرف‌کننده:** موتور دانش و زمینه باید در پیکربندی خود، لیست نسخه‌های پشتیبانی‌شده از گراف دانش را داشته باشد. در صورت دریافت خطای `VERSION_MISMATCH` از Graph Query Service، باید به‌طور خودکار به یک نسخه پایدار قبلی که پشتیبانی می‌کند، Fallback کند (طبق `Versioning_And_Compatibility_Strategy` بخش ۷.۲).
 - **دریافت نتیجه:** دریافت موجودیت‌ها و روابط مرتبط برای استفاده در Hybrid Retrieval و Context Assembly (بخش ۴.۹).
 - **ارسال محتوای خام برای استخراج:** در صورتی که Chunking یک سند موجودیت/رابطه جدیدی تولید کند، محتوای خام (نه موجودیت نهایی) برای استخراج به `Entity Extractor` و `Relation Extractor` در دامنه مدیریت دانش ارسال می‌شود؛ استخراج، اعتبارسنجی و ثبت نهایی در گراف همواره در همان دامنه انجام می‌شود.
 - **اعتبارسنجی دوره‌ای:** موتور دانش و زمینه باید به‌صورت دوره‌ای (مثلاً در زمان راه‌اندازی یا هر بار پس از به‌روزرسانی گراف دانش) سازگاری Queryهای خود را با نسخه فعلی گراف دانش اعتبارسنجی کند.
@@ -394,6 +396,23 @@ Source Attribution (Show Sources)
 
 ---
 
+### ۴.۱۰. Endpoint حذف داده‌های کاربر (`knowledge.delete_user_knowledge`)
+
+**مسئولیت:** پیاده‌سازی Endpoint داخلی استاندارد برای حذف تمام دانش‌های مرتبط با یک کاربر مشخص، به‌عنوان یکی از گام‌های Workflow حذف سرتاسری داده (`wf-deletion` تعریف‌شده در `Workflow_Domain_Architecture` بخش ۴.۱.۲).
+
+**وظایف کلیدی:**
+
+- **شناسایی دانش‌های مرتبط:** یافتن تمام واحدهای Knowledge که از طریق فراداده (`owner` یا `created_by`) به `user_id` درخواستی مرتبط هستند.
+- **حذف از Vector Database:** حذف رکوردهای مرتبط از Vector Database (Milvus) و Search Engine (Elasticsearch).
+- **حذف از Index:** حذف یا ناشناس‌سازی رکوردهای مرتبط در Indexهای جستجو.
+- **ثبت در Audit Log:** ثبت کامل عملیات حذف شامل تعداد رکوردهای حذف‌شده، زمان و شناسه کاربر.
+- **Idempotency:** تضمین این‌که اجرای مجدد درخواست حذف (طبق الزام بخش ۱۲.۶.۱ سند `Data_Governance_and_Compliance`) اثر جانبی جدید ایجاد نکند.
+- **گزارش نتیجه:** بازگرداندن تعداد رکورد حذف‌شده به سرویس `Data Subject Request Service`.
+
+**ورودی/خروجی:** مطابق قرارداد استاندارد Endpoint حذف تعریف‌شده در `Data_Governance_and_Compliance` (بخش ۱۲.۶).
+
+---
+
 ## ۵. جریان پردازش دانش (Knowledge Processing Flow)
 
 جریان کامل پردازش دانش از دریافت تا بازیابی:
@@ -425,7 +444,7 @@ Chunking
         ▼
 Metadata Extraction
         │
-        ├── Extract Entities & Relations
+        ├── Extract Entities & Relations (ارسال محتوای خام به مدیریت دانش)
         │
         ├── Add Classification & Tags
         │
@@ -443,7 +462,7 @@ Indexing
         │
         ├── Store Metadata
         │
-        ├── Update Knowledge Graph
+        ├── Update Knowledge Graph (از طریق دامنه مدیریت دانش)
         │
         ▼
 Available for Retrieval
@@ -452,7 +471,7 @@ Available for Retrieval
         │
         ├── Hybrid Search
         │
-        ├── Graph Query
+        ├── Graph Query (با مدیریت نسخه)
         │
         ▼
 Context Assembly → Model
@@ -489,8 +508,11 @@ Context Assembly → Model
 | BR‑018 | حذف دانش منسوخ | دانش منسوخ باید از چرخه استفاده خارج شود. | متوسط |
 | BR‑052 | کیفیت Embedding | Embedding تولیدشده باید از کیفیت کافی برخوردار باشد. | بالا |
 | BR‑053 | زمان نمایه‌سازی | فرآیند نمایه‌سازی باید در زمان قابل قبول انجام شود. | بالا |
+| BR‑087 | پشتیبانی از نسخه‌های گراف دانش | موتور دانش و زمینه باید حداقل از ۲ نسخه Major اخیر گراف دانش پشتیبانی کند. | بالا |
+| BR‑088 | Fallback در صورت عدم تطابق نسخه گراف دانش | در صورت عدم تطابق نسخه گراف دانش، موتور دانش و زمینه باید به‌طور خودکار به نسخه پایدار قبلی Fallback کند. | بالا |
+| BR‑089 | دسترسی انحصاری به گراف دانش از طریق موتور دانش | تمام درخواست‌های مربوط به داده‌های گراف دانش (از جمله از سوی Agentها) باید منحصراً از طریق موتور دانش و زمینه انجام شود. دسترسی مستقیم Agentها یا هر دامنه‌ی دیگری به Graph Query Service ممنوع است. | بحرانی |
 
-> **ارجاع:** قوانین کامل در سند `Business Rule Catalog` ثبت شده‌اند.
+> **ارجاع:** قوانین کامل در سند `Business_Rule_Catalog` ثبت شده‌اند.
 
 ---
 
@@ -508,14 +530,15 @@ Context Assembly → Model
 
 ## ۷. رویدادهای دامنه (Domain Events)
 
-| شناسه | نام رویداد | شرح | تولیدکننده | مصرف‌کننده |
-| :--- | :--- | :--- | :--- | :--- |
-| EVT‑001 | DocumentIngested | یک سند جدید دریافت و برای پردازش آماده شد. | Data Ingestion | مهندسی داده، عامل‌ها |
-| EVT‑002 | DocumentProcessed | پردازش اولیه یک سند تکمیل شد. | Document Processing | مهندسی داده |
-| EVT‑003 | KnowledgeIndexed | یک واحد دانش با موفقیت نمایه شد. | Indexing | عامل‌ها، حافظه و تجربه |
-| EVT‑004 | ContextAssembled | یک Context برای یک درخواست خاص مونتاژ شد. | Context Assembly | عامل‌ها |
-| EVT‑005 | KnowledgeUpdated | یک واحد دانش موجود به‌روزرسانی شد. | Knowledge Management | عامل‌ها، حافظه و تجربه |
-| EVT‑006 | KnowledgeDeprecated | یک واحد دانش منسوخ شد. | Knowledge Management | عامل‌ها، حاکمیت و انطباق |
+| شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| EVT-001 | **DocumentIngested** | v1.0 | دانش و زمینه | مهندسی داده، عامل‌ها و هماهنگی | دریافت یک سند جدید از طریق Connector | یک سند با موفقیت دریافت و برای پردازش آماده شد. | `document_id`, `source_type`, `content_hash`, `metadata`, `tenant_id` | غیرهمزمان |
+| EVT-002 | **DocumentProcessed** | v1.0 | دانش و زمینه | مهندسی داده | تکمیل پردازش اولیه یک سند (استخراج متن، Chunking) | سند پردازش و به قطعات قابل پردازش (Chunk) تقسیم شد. | `document_id`, `chunk_count`, `processing_time_ms`, `status` | غیرهمزمان |
+| EVT-003 | **KnowledgeIndexed** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی، حافظه و تجربه | تولید Embedding و ذخیره در Vector Database | یک واحد دانش (Knowledge) با موفقیت در پایگاه داده برداری نمایه (Index) شد. | `knowledge_id`, `chunk_id`, `embedding_version`, `source_document_id` | غیرهمزمان |
+| EVT-004 | **ContextAssembled** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی | درخواست ساخت Context توسط Orchestration Engine | Context مناسب برای یک درخواست خاص مونتاژ و آماده ارسال به مدل شد. | `context_id`, `correlation_id`, `knowledge_ids`, `size_tokens`, `assembly_time_ms` | همزمان |
+| EVT-005 | **KnowledgeUpdated** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی، حافظه و تجربه | تغییر در منبع اصلی دانش (ویرایش سند) | یک واحد دانش موجود به‌روزرسانی شد. | `knowledge_id`, `version`, `updated_fields`, `source_version` | غیرهمزمان |
+| EVT-006 | **KnowledgeDeprecated** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی، حاکمیت و انطباق | حذف منبع یا انقضای اعتبار دانش | یک واحد دانش منسوخ و غیرقابل استفاده شد. | `knowledge_id`, `deprecation_reason`, `replaced_by_id` | غیرهمزمان |
+| EVT-007 | **OntologyVersionPublished** | v1.0 | مدیریت دانش | دانش و زمینه، حاکمیت و انطباق | انتشار یک نسخه جدید از هستان‌شناسی | نسخه جدید هستان‌شناسی با تغییرات Major/Minor منتشر شد و مصرف‌کنندگان باید از آن مطلع شوند. | `ontology_id`, `new_version`, `deprecated_version`, `release_notes`, `deprecation_date`, `compatibility_notes` | غیرهمزمان |
 
 > **ارجاع:** رویدادهای کامل در سند `Domain Events Catalog` ثبت شده‌اند.
 
@@ -532,7 +555,8 @@ Context Assembly → Model
 | KnowledgeArchived | دانش بایگانی شد. |
 | RetrievalCompleted | بازیابی دانش پایان یافت. |
 | ContextOptimized | Context بهینه شد. |
-| GraphUpdated | گراف دانش به‌روزرسانی شد. |
+| GraphUpdated | گراف دانش به‌روزرسانی شد (از طریق دامنه مدیریت دانش). |
+| GraphVersionFallback | Fallback به نسخه پایدار قبلی گراف دانش فعال شد. |
 
 ---
 
@@ -541,7 +565,7 @@ Context Assembly → Model
 | دامنه تأمین‌کننده | نوع وابستگی | شدت | شرح |
 | :--- | :--- | :--- | :--- |
 | **مهندسی داده** | داده‌ای — زمان اجرا | قوی | دسترسی به داده‌های پردازش‌شده و نمایه‌شده |
-| **مدیریت دانش** | سرویس — زمان اجرا | قوی | مصرف کامل Graph Query Service برای پرس‌وجوی گراف؛ این دامنه هیچ داده گرافی مستقل ندارد (Shared Kernel، شرح در بخش ۴.۶) |
+| **مدیریت دانش** | سرویس — زمان اجرا | قوی | مصرف کامل Graph Query Service برای پرس‌وجوی گراف با مدیریت نسخه و Fallback؛ این دامنه هیچ داده گرافی مستقل ندارد (Shared Kernel، شرح در بخش ۴.۶) |
 | **حافظه و تجربه** | داده‌ای — زمان اجرا | ضعیف | استفاده از تجربیات گذشته در تولید Context |
 | **اتصال‌دهنده** | داده‌ای — زمان اجرا | قوی | دریافت داده از منابع خارجی |
 | **هویت و دسترسی** | امنیتی — زمان اجرا | قوی | کنترل دسترسی به منابع دانش |
@@ -557,16 +581,18 @@ Context Assembly → Model
 | :--- | :--- |
 | `Naming_And_Terminology_Glossary` | مرجع واژه‌نامه و استاندارد نام‌گذاری |
 | `Domain Landscape` | مرجع دامنه‌های اصلی و جایگاه این دامنه |
-| `Context Map` | مرجع الگوهای تعامل بین دامنه‌ها |
-| `Domain Dependency Map` | مرجع وابستگی‌های این دامنه به سایر دامنه‌ها |
-| `Business Rule Catalog` | مرجع قوانین کسب‌وکار مرتبط |
-| `Domain Events Catalog` | مرجع رویدادهای دامنه |
+| `Context_Map` | مرجع الگوهای تعامل بین دامنه‌ها (این دامنه با مدیریت دانش از طریق Shared Kernel تعامل دارد) |
+| `Domain_Dependency_Map` | مرجع وابستگی‌های این دامنه به سایر دامنه‌ها |
+| `Business_Rule_Catalog` | مرجع قوانین کسب‌وکار مرتبط |
+| `Domain_Events_Catalog` | مرجع رویدادهای دامنه |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع Componentها و لایه‌های معماری |
-| `Data_Model_And_Knowledge_Schema_Overview` | مرجع مدل داده و طرحواره دانش |
+| `Data_Model_And_Knowledge_Schema_Overview` | مرجع مدل داده و طرحواره دانش (Shared Kernel با مدیریت دانش) |
 | `Data_Engineering_Domain_Architecture` | مرجع مهندسی داده که داده‌های ورودی را تأمین می‌کند |
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع الگوهای دریافت داده |
 | `Security_and_Privacy_Architecture` | مرجع کنترل‌های امنیتی و حفاظت از داده |
 | `Monitoring_and_Observability_Overview` | مرجع پایش و مشاهده‌پذیری |
+| `Versioning_And_Compatibility_Strategy` | مرجع استراتژی مهاجرت که مدیریت نسخه در بخش ۴.۶ و ۴.۷.۲ بر اساس آن است |
+| `Knowledge_Management_Domain_Architecture` | مرجع دامنه مدیریت دانش که مالک گراف دانش و ارائه‌دهنده Graph Query Service است |
 
 ---
 
@@ -583,6 +609,8 @@ Context Assembly → Model
 | Reranking Accuracy | روند افزایشی |
 | Duplicate Knowledge Rate | کمتر از 1% |
 | Source Attribution Coverage | 100% |
+| Graph Version Fallback Success Rate | بیش از 99% |
+| Graph Query Version Mismatch Rate | کمتر از 1% |
 
 ---
 
@@ -590,7 +618,9 @@ Context Assembly → Model
 
 دامنه **دانش و زمینه** به‌عنوان **قلب دانشی پلتفرم**، نقش حیاتی در تبدیل داده‌های خام سازمانی به دانش قابل استفاده و زمینه‌های دقیق برای مدل‌های هوش مصنوعی ایفا می‌کند. معماری تعریف‌شده در این سند، چارچوبی استاندارد، مقیاس‌پذیر، کارآمد و قابل اعتماد برای مدیریت چرخه عمر دانش، تولید Embedding، جستجوی معنایی و مونتاژ Context فراهم می‌آورد.
 
-رعایت اصول طراحی (Knowledge First، Context Quality، Traceability، Metadata Driven، Semantic Enrichment) و پیاده‌سازی مؤلفه‌های کلیدی (Ingestion، Processing، Chunking، Embedding، Indexing، Retrieval، RAG، Context Assembly) تضمین می‌کند که پلتفرم بتواند دانش سازمانی را به‌صورت مؤثر مدیریت کرده و زمینه‌های دقیق و قابل اعتمادی برای مدل‌های هوش مصنوعی تولید کند.
+با اضافه شدن مدیریت نسخه گراف دانش و مکانیزم Fallback خودکار (بخش ۴.۶ و ۴.۷.۲)، این دامنه قادر است در مواجهه با تغییرات هستان‌شناسی، بدون ایجاد اختلال در سرویس‌های مصرف‌کننده عمل کند. همچنین، هم‌راستایی با استراتژی نسخه‌گذاری و مهاجرت (طبق `Versioning_And_Compatibility_Strategy`) تضمین می‌کند که تغییرات در گراف دانش به‌صورت کنترل‌شده مدیریت شوند.
+
+رعایت اصول طراحی (Knowledge First، Context Quality، Traceability، Metadata Driven، Semantic Enrichment، Graph Version Management) و پیاده‌سازی مؤلفه‌های کلیدی (Ingestion، Processing، Chunking، Embedding، Indexing، Retrieval، RAG، Context Assembly) تضمین می‌کند که پلتفرم بتواند دانش سازمانی را به‌صورت مؤثر مدیریت کرده و زمینه‌های دقیق و قابل اعتمادی برای مدل‌های هوش مصنوعی تولید کند.
 
 **مسئولیت به‌روزرسانی:** تیم معماری به همراه تیم‌های توسعه، مهندسی داده و هوش مصنوعی مسئول بازبینی دوره‌ای این سند، به‌روزرسانی آن بر اساس تغییرات نیازمندی‌های دانش، الگوریتم‌های جدید جستجو و بازخورد تیم‌های پیاده‌سازی هستند.
 

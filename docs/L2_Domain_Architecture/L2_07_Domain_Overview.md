@@ -86,7 +86,7 @@
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      لایه داده و هوش مصنوعی                                │
+│                      لایه داده و هوش مصنوعي                                │
 │                   (Data & AI Layer)                                        │
 │                                                                             │
 │  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐                   │
@@ -133,9 +133,9 @@
 
 | دامنه | شناسه | مسئولیت کلیدی | زیردامنه‌های احتمالی | وابستگی به دامنه‌های دیگر |
 | :--- | :--- | :--- | :--- | :--- |
-| **عامل‌ها (Agent)** | `Agent` | مدیریت چرخه حیات Agentها، هماهنگی بین Agentها، تصمیم‌گیری هوشمند، تحلیل Intent و Planning | Orchestrator، Planner، Reviewer | دانش و زمینه، حافظه و تجربه، ابزارها، مدیریت مدل‌ها، مدیریت جریان کار |
+| **عامل‌ها (Agent)** | `Agent` | مدیریت چرخه حیات Agentها، هماهنگی بین Agentها، تصمیم‌گیری هوشمند، تحلیل Intent و Planning | Orchestrator، Planner، Reviewer، Agent Capability Registry | دانش و زمینه، حافظه و تجربه، ابزارها، مدیریت مدل‌ها، مدیریت جریان کار |
 | **دانش و زمینه** | `Knowledge-Context` | مدیریت چرخه عمر دانش سازمانی، تولید Embedding، جستجوی معنایی، مونتاژ Context | Ingestion، Indexing، Retrieval، RAG | مهندسی داده، مدیریت دانش، حافظه و تجربه |
-| **حافظه و تجربه** | `Memory-Experience` | مدیریت حافظه کوتاه‌مدت (Session)، بلندمدت (Long-Term) و رویدادمحور (Episodic) - **که در سطح استقرار به دو سرویس مجزا تفکیک می‌شوند.** | Session Memory (Online Cache)، Long-Term Memory (Vector/Relational)، Experience Store | عامل‌ها، دانش و زمینه، مدیریت دانش |
+| **حافظه و تجربه** | `Memory-Experience` | مدیریت حافظه کوتاه‌مدت (Session)، بلندمدت (Long-Term) و رویدادمحور (Episodic) - **که در سطح استقرار به دو سرویس مجزا تفکیک می‌شوند.** | Session Memory (Online Cache)، Long-Term Memory (Vector/Relational)، Experience Store، Shared Agent Context Store | عامل‌ها، دانش و زمینه، مدیریت دانش |
 | **ابزارها (Tool)** | `Tool` | مدیریت و اجرای امن Toolها و Workflowها در سیستم‌های خارجی | Tool Registry، Execution Engine، Sandbox | عامل‌ها، مدیریت جریان کار، هویت و دسترسی |
 | **مدیریت مدل‌ها** | `Model-Management` | مدیریت اتصال، انتخاب و مسیریابی مدل‌های هوش مصنوعی (LLM، Embedding، Reranking) | Model Registry، Router، Provider Adapter | یادگیری ماشین، عامل‌ها، مشاهده‌پذیری |
 | **مدیریت جریان کار** | `Workflow` | مدیریت فرآیندهای چندمرحله‌ای و گردش‌کارهای سازمانی | Workflow Engine، State Manager | عامل‌ها، ابزارها، حافظه و تجربه |
@@ -162,6 +162,7 @@
 | **زیرساخت و عملیات** | `Infrastructure-Ops` | مدیریت زیرساخت محاسباتی، شبکه، استقرار و مقیاس‌پذیری | Kubernetes، CI/CD، Resource Management | همه دامنه‌ها |
 | **مشاهده‌پذیری** | `Observability` | مدیریت پایش (Monitoring)، لاگ‌گیری (Logging) و ردیابی (Tracing) سیستم | Metrics، Logs، Traces، Alerting | همه دامنه‌ها |
 | **هوش مصنوعی مسئولانه** | `Responsible-AI` | تضمین استفاده اخلاقی، شفاف و عادلانه از هوش مصنوعی | Bias Evaluation، Explainability، Human-in-the-Loop | یادگیری ماشین، مدیریت مدل‌ها، عامل‌ها |
+| **درخواست‌های موضوع داده** | `Data-Subject-Requests` | مدیریت درخواست‌های حقوقی کاربران (حذف، اصلاح، حمل داده) و هماهنگی حذف سرتاسری داده | دریافت درخواست حذف، تأیید هویت، Orchestration حذف، گزارش‌دهی انطباق | همه دامنه‌ها (برای اجرای عملیات حذف) |
 
 ---
 
@@ -211,6 +212,7 @@
 | زیرساخت و عملیات | زیرساخت (Kubernetes، پایگاه‌ها) |
 | مشاهده‌پذیری | Governance & Platform Services |
 | هوش مصنوعی مسئولانه | Governance & Platform Services |
+| درخواست‌های موضوع داده | Governance & Platform Services |
 
 ---
 
@@ -223,9 +225,9 @@
 | **API و یکپارچه‌سازی** | `API_Integration_Domain_Architecture.md` | طراحی API Gateway، نسخه‌بندی، Rate Limiting، SDK |
 | **رویداد و Webhook** | `Event_Webhook_Domain_Architecture.md` | طراحی Event Publisher، Webhook Registry، امنیت Webhook |
 | **اتصال‌دهنده** | `Connector_Domain_Architecture.md` | طراحی Connector Framework، Registry، Data Ingestion |
-| **عامل‌ها** | `Agent_Domain_Architecture.md` | طراحی Orchestrator، Planner، Reviewer، Multi‑Agent Coordination |
+| **عامل‌ها** | `Agent_Domain_Architecture.md` | طراحی Orchestrator، Planner، Reviewer، Multi‑Agent Coordination، Capability Registry |
 | **دانش و زمینه** | `Knowledge_Context_Domain_Architecture.md` | طراحی Ingestion، Indexing، Retrieval، RAG، Context Assembly |
-| **حافظه و تجربه** | `Memory_Experience_Domain_Architecture.md` | طراحی Session Memory، Long‑Term Memory، Experience Store |
+| **حافظه و تجربه** | `Memory_Experience_Domain_Architecture.md` | طراحی Session Memory، Long‑Term Memory، Experience Store، Shared Agent Context Store |
 | **ابزارها** | `Tool_Domain_Architecture.md` | طراحی Tool Registry، Execution Engine، Sandbox، Security |
 | **مدیریت مدل‌ها** | `Model_Management_Domain_Architecture.md` | طراحی Model Registry، Router، Provider Adapter، Fallback |
 | **مدیریت جریان کار** | `Workflow_Domain_Architecture.md` | طراحی Workflow Engine، State Manager، Orchestration |
@@ -238,6 +240,7 @@
 | **زیرساخت و عملیات** | `Infrastructure_Ops_Domain_Architecture.md` | طراحی Kubernetes، CI/CD، Resource Management |
 | **مشاهده‌پذیری** | `Observability_Domain_Architecture.md` | طراحی Metrics، Logs، Traces، Alerting |
 | **هوش مصنوعی مسئولانه** | `Responsible_AI_Domain_Architecture.md` | طراحی Bias Evaluation، Explainability، Human-in-the-Loop |
+| **درخواست‌های موضوع داده** | `Data_Subject_Requests_Domain_Architecture.md` | طراحی مدیریت درخواست‌های حقوقی کاربران و Orchestration حذف |
 
 ---
 

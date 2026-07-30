@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # معماری دامنه ابزارها (Tool Domain Architecture)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.0
+**نسخه:** 1.1
 
-**وضعیت:** پیش‌نویس
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -146,9 +145,9 @@ Execution Engine تنها مسئول اجرای ابزار است و مسئول�
 
 - **دریافت درخواست اجرا:** دریافت درخواست اجرای Tool از Agent، Workflow Engine یا سایر سرویس‌های مجاز
 - **اعتبارسنجی درخواست:** بررسی ساختار ورودی، نسخه Tool، مجوزها و Policyهای اجرایی
-- **اعمال Policyها:** اعمال Rate Limit، Timeout، Quota، Concurrency Limit و سایر سیاست‌های اجرایی
+- **اعمال Policyها:** اعمال Rate Limit، Timeout (طبق `Non_Functional_Requirements_And_SLA`)، Quota، Concurrency Limit و سایر سیاست‌های اجرایی
 - **اجرای Tool:** اجرای Tool از طریق Runtime مناسب (HTTP، gRPC، Script، Container، MCP و ...)
-- **مدیریت خطاهای اجرایی:** مدیریت Retry، Timeout، Circuit Breaker و ثبت Failure
+- **مدیریت خطاهای اجرایی:** مدیریت Retry (طبق سیاست یکپارچه در `Non_Functional_Requirements_And_SLA`)، Timeout، Circuit Breaker و ثبت Failure
 - **بازگرداندن نتیجه:** تبدیل خروجی Tool به قالب استاندارد و ارسال نتیجه به درخواست‌کننده
 - **ثبت رویدادها و Metrics:** انتشار رویدادهای اجرا و ثبت اطلاعات موردنیاز برای مشاهده‌پذیری و ممیزی
 - **انتخاب Runtime:** انتخاب Runtime مناسب بر اساس نوع ابزار
@@ -160,6 +159,23 @@ Execution Engine تنها مسئول اجرای ابزار است و مسئول�
 **نکته معماری:**
 
 Execution Engine هیچ دانشی نسبت به منطق کسب‌وکار، ترتیب اجرای مراحل، تصمیم‌گیری یا Compensation ندارد و صرفاً مسئول اجرای یک درخواست Tool است. مدیریت فرآیندهای چندمرحله‌ای بر عهده Workflow Engine و تصمیم‌گیری بر عهده Agent یا Orchestrator است.
+
+**پیکربندی Circuit Breaker:**
+
+| پارامتر | مقدار پیش‌فرض | توضیح |
+| :--- | :--- | :--- |
+| **Failure Threshold** | ۵۰٪ | درصد خطا در ۱۰ ثانیه آخر که باعث باز شدن مدار می‌شود |
+| **Circuit Open Timeout** | ۳۰ ثانیه | مدت زمانی که مدار در حالت باز (Open) باقی می‌ماند |
+| **Half-Open Success Threshold** | ۱ درخواست موفق | تعداد درخواست‌های موفق در حالت Half-Open برای بسته شدن مجدد مدار |
+| **Monitoring** | فعال | ثبت وضعیت مدار در Metrics و هشدار در صورت باز شدن |
+
+**پیکربندی Timeout پیش‌فرض (طبق `Non_Functional_Requirements_And_SLA`):**
+
+| نوع عملیات | Timeout پیش‌فرض |
+| :--- | :--- |
+| **فراخوانی Tool (همزمان)** | ۶۰ ثانیه |
+| **اجرای Tool در Sandbox** | ۱۲۰ ثانیه |
+| **اجرای Tool جریانی** | ۳۰۰ ثانیه |
 
 **جریان اجرای Tool:**
 
@@ -201,7 +217,7 @@ Tool Execution
         Failure Event with compensation_status
 ```
 
-−−−
+---
 
 #### ۴.۳.۱. پشتیبانی از عملیات جبرانی (Compensation Execution)
 
@@ -233,7 +249,7 @@ Execution Engine دریافت درخواست compensate
 
 ---
 
-### ۴.۳.۲. الزامات پاسخ اجرای Tool
+#### ۴.۳.۲. الزامات پاسخ اجرای Tool
 
 پاسخ هر درخواست اجرای Tool باید شامل فیلد `compensation_status` با یکی از مقادیر زیر باشد:
 
@@ -350,6 +366,21 @@ Execution Engine دریافت درخواست compensate
 
 ---
 
+### ۴.۸. Endpoint حذف تاریخچه کاربر (`tool.delete_user_history`)
+
+**مسئولیت:** پیاده‌سازی Endpoint داخلی استاندارد برای حذف یا ناشناس‌سازی تاریخچه اجرای Toolهای مرتبط با یک کاربر مشخص، به‌عنوان یکی از گام‌های Workflow حذف سرتاسری داده (`wf-deletion` تعریف‌شده در `Workflow_Domain_Architecture` بخش ۴.۱.۲).
+
+**وظایف کلیدی:**
+
+- **شناسایی تاریخچه مرتبط:** یافتن تمام رکوردهای `ToolExecutionStarted`، `ToolExecutionSucceeded` و `ToolExecutionFailed` که به `user_id` درخواستی مرتبط هستند.
+- **ناشناس‌سازی:** ناشناس‌سازی `user_id` و `agent_id` (در صورت وجود) در رکوردهای تاریخچه اجرا (به‌دلیل نیاز به نگهداری برای تحلیل و عیب‌یابی، حذف کامل مجاز نیست).
+- **Idempotency:** تضمین این‌که اجرای مجدد درخواست حذف اثر جانبی جدید ایجاد نکند.
+- **گزارش نتیجه:** بازگرداندن تعداد رکورد ناشناس‌شده به سرویس `Data Subject Request Service`.
+
+**ورودی/خروجی:** مطابق قرارداد استاندارد Endpoint حذف تعریف‌شده در `Data_Governance_and_Compliance` (بخش ۱۲.۶).
+
+---
+
 ## ۵. جریان کامل اجرای ابزار
 
 جریان کامل از درخواست عامل تا دریافت نتیجه:
@@ -398,7 +429,7 @@ Return Result to Agent
 | :--- | :--- | :--- | :--- |
 | BR‑024 | مجوز اجرای Tool | هر Agent فقط مجاز به اجرای Toolهایی است که در Policy آن تعریف شده است. | بحرانی |
 | BR‑025 | تأیید انسانی برای Toolهای پرریسک | اجرای Toolهایی با سطح ریسک بالا نیاز به تأیید انسانی دارد. | بحرانی |
-| BR‑026 | محدودیت زمان اجرای Tool | هر Tool باید در مدت زمان مشخصی (Timeout) اجرا شود. | بالا |
+| BR‑026 | محدودیت زمان اجرای Tool | هر Tool باید در مدت زمان مشخصی (Timeout) اجرا شود و در غیر این صورت لغو شود. | بالا |
 | BR‑027 | محدودیت تعداد تکرار Tool | تعداد Retry برای هر Tool نباید از حد مشخصی تجاوز کند. | متوسط |
 | BR‑028 | اعتبارسنجی پارامترهای Tool | تمام پارامترهای ارسالی به Toolها باید اعتبارسنجی شوند. | بالا |
 | BR‑029 | ثبت کامل اجرای Tool | تمام فراخوانی‌های Tool، پارامترها و نتایج باید ثبت شوند. | بالا |
@@ -466,6 +497,8 @@ Return Result to Agent
 | `Security_and_Privacy_Architecture` | مرجع کنترل‌های امنیتی و Sandbox |
 | `Multi_Agent_Collaboration_Model` | مرجع همکاری چند‑Agent و استفاده از ابزارها |
 | `Monitoring_and_Observability_Overview` | مرجع پایش و مشاهده‌پذیری |
+| `Transaction_And_Compensation_Strategy` | مرجع استراتژی جبران و مدیریت تراکنش‌های توزیع‌شده |
+| `Data_Governance_and_Compliance` | مرجع حق فراموشی و حذف داده که Endpoint بخش ۴.۸ بر اساس آن طراحی شده است |
 
 ---
 
@@ -473,7 +506,7 @@ Return Result to Agent
 
 دامنه **ابزارها** به‌عنوان **بازوی اجرایی پلتفرم**، نقش حیاتی در تبدیل تصمیمات هوشمند عامل‌ها به عملیات واقعی در سیستم‌های سازمانی ایفا می‌کند. معماری تعریف‌شده در این سند، چارچوبی استاندارد، امن، مقیاس‌پذیر و قابل اعتماد برای تعریف، ثبت، کشف، اجرا و پایش ابزارها و گردش‌کارها فراهم می‌آورد.
 
-رعایت اصول طراحی (Tool‑Centric، Security by Default، Isolation، Fault Tolerance، Transaction Management) و پیاده‌سازی مؤلفه‌های کلیدی (Tool Registry، Tool Catalog، Execution Engine، Sandbox، Workflow Engine، Security & Authorization) تضمین می‌کند که عامل‌های هوشمند بتوانند به‌صورت کنترل‌شده، امن و قابل اطمینان با سیستم‌های خارجی تعامل کرده و عملیات واقعی را در سازمان اجرا کنند.
+رعایت اصول طراحی (Tool‑Centric، Security by Default، Isolation، Fault Tolerance، Transaction Management) و پیاده‌سازی مؤلفه‌های کلیدی (Tool Registry، Tool Catalog، Execution Engine، Sandbox، Security & Authorization) تضمین می‌کند که عامل‌های هوشمند بتوانند به‌صورت کنترل‌شده، امن و قابل اطمینان با سیستم‌های خارجی تعامل کرده و عملیات واقعی را در سازمان اجرا کنند.
 
 **مسئولیت به‌روزرسانی:** تیم معماری به همراه تیم‌های توسعه، امنیت و یکپارچه‌سازی مسئول بازبینی دوره‌ای این سند، به‌روزرسانی آن بر اساس تغییرات نیازمندی‌های ابزارها، پروتکل‌های جدید و بازخورد تیم‌های پیاده‌سازی هستند.
 

@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # فهرست قوانین کسب‌وکار (Business Rule Catalog)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.0
+**نسخه:** 1.2
 
-**وضعیت:** پیش‌نویس
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -25,14 +24,15 @@
 
 این سند تمام قوانین کسب‌وکاری را که بر رفتار پلتفرم تأثیر می‌گذارند، پوشش می‌دهد و شامل موارد زیر است:
 
-- **قوانین امنیت و دسترسی:** احراز هویت، مجوزدهی، کنترل دسترسی
-- **قوانین حاکمیت داده:** طبقه‌بندی داده، دوره نگهداری، کیفیت داده
-- **قوانین مدیریت دانش:** اعتبارسنجی، نمایه‌سازی، بازیابی
+- **قوانین امنیت و دسترسی:** احراز هویت، مجوزدهی، کنترل دسترسی، مدیریت Shared Kernel
+- **قوانین حاکمیت داده:** طبقه‌بندی داده، دوره نگهداری، کیفیت داده، حق فراموشی
+- **قوانین مدیریت دانش:** اعتبارسنجی، نمایه‌سازی، بازیابی، نسخه‌گذاری هستان‌شناسی
 - **قوانین حافظه و تجربه:** ذخیره‌سازی، بازه نگهداری، دسترسی
-- **قوانین ابزارها و اقدامات:** مجوز اجرا، تأیید انسانی، محدودیت‌ها
+- **قوانین ابزارها و اقدامات:** مجوز اجرا، تأیید انسانی، محدودیت‌ها، جبران
 - **قوانین عامل‌ها و هماهنگی:** تصمیم‌گیری، اولویت‌بندی، Fallback
 - **قوانین هوش مصنوعی مسئولانه:** سوگیری، شفافیت، Human-in-the-Loop
-- **قوانین عملیاتی:** مقیاس‌پذیری، پایش، هشداردهی
+- **قوانین عملیاتی:** مقیاس‌پذیری، پایش، هشداردهی، Retry، Timeout
+- **قوانین چند-مستأجری و هزینه:** ایزوله‌سازی Tenant، مدیریت هزینه، تخصیص منابع
 
 قوانین فنی سطح پایین (مانند محدودیت‌های شبکه، تنظیمات JVM، یا قوانین کدنویسی) در این سند ثبت نمی‌شوند و باید در اسناد فنی مربوطه مستند شوند.
 
@@ -57,9 +57,9 @@
 
 | فیلد | توضیح | الزامی |
 | :--- | :--- | :--- |
-| **شناسه قانون (Rule ID)** | شناسه یکتا برای ارجاع به قانون (مثلاً BR‑XXX) | بله |
+| **شناسه قانون (Rule ID)** | شناسه یکتا برای ارجاع به قانون (مثلاً BR-XXX) | بله |
 | **عنوان (Title)** | نام کوتاه و گویا که اصل قانون را بیان کند | بله |
-| **دسته‌بندی (Category)** | دسته‌بندی قانون (امنیت، داده، دانش، حافظه، ابزار، عامل، هوش مصنوعی، عملیاتی) | بله |
+| **دسته‌بندی (Category)** | دسته‌بندی قانون (امنیت، داده، دانش، حافظه، ابزار، عامل، هوش مصنوعی، عملیاتی، چند-مستأجری) | بله |
 | **دامنه‌های مرتبط (Related Domains)** | دامنه‌هایی که این قانون در آن‌ها اعمال می‌شود | بله |
 | **شرح (Description)** | شرح کامل قانون و دلیل وجود آن | بله |
 | **بیان منطقی (Logical Expression)** | بیان قانون به‌صورت «اگر-آن‌گاه» یا معادله منطقی | بله |
@@ -83,9 +83,7 @@
 | BR‑004 | حداقل دسترسی | امنیت | همه دامنه‌ها | هر کاربر، سرویس یا Agent فقط به حداقل منابع و داده‌های لازم برای انجام وظیفه خود دسترسی دارد. | `IF (requested_resource not in [user_allowed_resources]) THEN (reject with 403 Forbidden)` | بالا | تأییدشده |
 | BR‑005 | رمزنگاری داده‌های حساس | امنیت | همه دامنه‌ها | تمام داده‌های با طبقه‌بندی «محرمانه» و «بسیار محرمانه» باید در حالت ذخیره و انتقال رمزنگاری شوند. | `IF (data_classification IN ["Confidential", "Highly Confidential"]) THEN (encryption_required = TRUE)` | بحرانی | تأییدشده |
 | BR‑006 | ثبت تلاش‌های ناموفق | امنیت | همه دامنه‌ها | تمام تلاش‌های ناموفق برای احراز هویت یا دسترسی باید ثبت و قابل ممیزی باشند. | `IF (authentication_failed OR authorization_failed) THEN (log_to_audit = TRUE)` | بالا | تأییدشده |
-| BR‑076 | ثبت عملیات جبرانی برای Toolهای پرریسک | ابزارها | ابزارها و اقدامات، مدیریت جریان کار | هر Tool با سطح ریسک "High" یا "Critical" که دارای اثر جانبی تغییردهنده وضعیت در سیستم خارجی است (`compensation_capability != READ_ONLY`) باید قابلیت جبران (`compensation_capability = COMPENSABLE`) داشته باشد. | `IF (tool_risk_level IN ["High", "Critical"] AND compensation_capability != "READ_ONLY") THEN (compensation_capability = "COMPENSABLE", compensation_action IS NOT NULL)` | بالا | پیشنهادی |
-| BR‑077 | Idempotency عملیات جبرانی | ابزارها | ابزارها و اقدامات | عملیات جبرانی هر Tool باید Idempotent باشد تا در صورت Retry، عوارض جانبی جدید ایجاد نشود. | `IF (compensable = TRUE) THEN (is_compensation_idempotent = TRUE)` | بحرانی | پیشنهادی |
-| BR‑078 | حداکثر زمان جبران گردش‌کار | مدیریت جریان کار | مدیریت جریان کار | کل فرایند جبران یک گردش‌کار نباید از زمان مشخصی (مثلاً ۵ دقیقه) تجاوز کند. در غیر این صورت، وضعیت به "COMPENSATION_FAILED" تغییر کرده و نیاز به مداخله دستی دارد. در صورت شکست عملیات جبرانی، گردش‌کار به وضعیت `COMPENSATION_FAILED` رفته و Dead Letter Queue فعال می‌شود. حداکثر زمان انتظار برای بازیابی دستی، ۷۲ ساعت است که پس از آن گردش‌کار به‌صورت خودکار بایگانی می‌شود. | `IF (compensation_duration > COMPENSATION_TIMEOUT) THEN (status = "COMPENSATION_FAILED", alert_ops = TRUE, enqueue_to_dlq = TRUE)` | بالا | پیشنهادی |
+| BR‑121 | Shared Kernel برای هویت و امنیت | امنیت | هویت و دسترسی، امنیت و حریم خصوصی | مفاهیم پایه هویت (`User`, `Role`, `Permission`) و سیاست امنیتی (`Policy`, `Rule`) باید به‌عنوان Shared Kernel در `Data_Model_And_Knowledge_Schema_Overview` تعریف شوند تا وابستگی چرخه‌ای بین دو دامنه برطرف شود. هیچ‌یک از دو دامنه نباید مستقیماً به مدل‌های داخلی دیگری وابسته باشد. | `IF (identity_or_security_domain_requires_core_model) THEN (use_shared_kernel_only = TRUE, no_direct_dependency = TRUE)` | بحرانی | تأییدشده |
 
 ---
 
@@ -99,13 +97,13 @@
 | BR‑010 | یکتایی داده | حاکمیت داده | مهندسی داده | هر موجودیت باید یک بار و بدون تکرار ذخیره شود. | `IF (duplicate_detected) THEN (reject_or_merge_data = TRUE)` | متوسط | تأییدشده |
 | BR‑011 | مستندسازی فراداده | حاکمیت داده | مهندسی داده | هر مجموعه داده باید دارای فراداده کامل (مالک، منبع، تاریخ ایجاد، طبقه‌بندی) باشد. | `IF (metadata_incomplete) THEN (log_warning = TRUE, processing_pending = TRUE)` | متوسط | تأییدشده |
 | BR‑012 | حذف امن داده | حاکمیت داده | مهندسی داده | داده‌های حذف‌شده باید با روش‌های امن (Secure Deletion) حذف شوند و قابل بازیابی نباشند. | `IF (delete_requested AND classification IN ["Confidential", "Highly Confidential"]) THEN (secure_delete = TRUE)` | بالا | تأییدشده |
-| BR‑079 | حق حذف داده | حاکمیت داده | همه دامنه‌ها | کاربران حق دارند درخواست حذف کامل داده‌های شخصی خود را ارائه دهند. | `IF (user_requests_deletion) THEN (start_deletion_workflow = TRUE)` | بحرانی | پیشنهادی |
-| BR‑080 | دوره Soft Delete | حاکمیت داده | همه دامنه‌ها | داده‌های حذف‌شده باید به‌مدت ۳۰ روز در حالت Soft Delete باقی بمانند تا امکان لغو درخواست وجود داشته باشد. | `IF (soft_delete_date + 30 days < current_date) THEN (start_hard_delete = TRUE)` | بالا | پیشنهادی |
-| BR‑081 | ناشناس‌سازی Audit Logs | حاکمیت داده | حاکمیت و انطباق | Audit Logs هرگز به‌طور کامل حذف نمی‌شوند، اما شناسه کاربر در آن‌ها ناشناس می‌شود. | `IF (user_deletion_requested) THEN (anonymize_user_id_in_audit = TRUE, keep_audit_record = TRUE)` | بحرانی | پیشنهادی |
-| BR‑082 | گزارش تأیید حذف | حاکمیت داده | حاکمیت و انطباق | پس از اتمام فرایند حذف، یک گزارش تأیید به کاربر و تیم انطباق ارسال می‌شود. | `IF (deletion_completed) THEN (send_confirmation_report = TRUE)` | بالا | پیشنهادی |
-| BR‑083 | Idempotency عملیات حذف | حاکمیت داده | همه دامنه‌ها | تمام عملیات حذف داده باید Idempotent باشند تا در صورت Retry، عوارض جانبی جدید ایجاد نشود. | `IF (deletion_action_called) THEN (idempotency_check = TRUE)` | بحرانی | پیشنهادی |
-| BR‑084 | تعیین راهکار برای Toolهای غیرقابل جبران | ابزارها | ابزارها و اقدامات، مدیریت جریان کار | در صورت شکست یک Tool با `compensation_capability = NON_COMPENSABLE`، Orchestrator باید `non_compensable_failure_policy` را اعمال کند. | `IF (compensation_capability == "NON_COMPENSABLE" AND execution_failed) THEN (apply non_compensable_failure_policy)` | بالا | پیشنهادی |
-| BR‑085 | ثبت شکست عملیات جبرانی | ابزارها | ابزارها و اقدامات، مدیریت جریان کار، حاکمیت و انطباق | در صورت شکست عملیات جبرانی، خطا باید در Audit Log ثبت، هشدار Critical ارسال، و درخواست به Dead Letter Queue منتقل شود. | `IF (compensation_action_failed) THEN (log_to_audit = TRUE, send_critical_alert = TRUE, enqueue_to_dlq = TRUE)` | بحرانی | پیشنهادی |
+| BR‑079 | حق حذف داده | حاکمیت داده | همه دامنه‌ها | کاربران حق دارند درخواست حذف کامل داده‌های شخصی خود را ارائه دهند. | `IF (user_requests_deletion) THEN (start_deletion_workflow = TRUE)` | بحرانی | تأییدشده |
+| BR‑080 | دوره Soft Delete | حاکمیت داده | همه دامنه‌ها | داده‌های حذف‌شده باید به‌مدت ۳۰ روز در حالت Soft Delete باقی بمانند تا امکان لغو درخواست وجود داشته باشد. | `IF (soft_delete_date + 30 days < current_date) THEN (start_hard_delete = TRUE)` | بالا | تأییدشده |
+| BR‑081 | ناشناس‌سازی Audit Logs | حاکمیت داده | حاکمیت و انطباق | Audit Logs هرگز به‌طور کامل حذف نمی‌شوند، اما شناسه کاربر در آن‌ها ناشناس می‌شود. | `IF (user_deletion_requested) THEN (anonymize_user_id_in_audit = TRUE, keep_audit_record = TRUE)` | بحرانی | تأییدشده |
+| BR‑082 | گزارش تأیید حذف | حاکمیت داده | حاکمیت و انطباق | پس از اتمام فرایند حذف، یک گزارش تأیید به کاربر و تیم انطباق ارسال می‌شود. | `IF (deletion_completed) THEN (send_confirmation_report = TRUE)` | بالا | تأییدشده |
+| BR‑083 | Idempotency عملیات حذف | حاکمیت داده | همه دامنه‌ها | تمام عملیات حذف داده باید Idempotent باشند تا در صورت Retry، عوارض جانبی جدید ایجاد نشود. | `IF (deletion_action_called) THEN (idempotency_check = TRUE)` | بحرانی | تأییدشده |
+| BR‑084 | تعیین راهکار برای Toolهای غیرقابل جبران | ابزارها | ابزارها و اقدامات، مدیریت جریان کار | در صورت شکست یک Tool با `compensation_capability = NON_COMPENSABLE`، Orchestrator باید `non_compensable_failure_policy` را اعمال کند. | `IF (compensation_capability == "NON_COMPENSABLE" AND execution_failed) THEN (apply non_compensable_failure_policy)` | بالا | تأییدشده |
+| BR‑085 | ثبت شکست عملیات جبرانی | ابزارها | ابزارها و اقدامات، مدیریت جریان کار، حاکمیت و انطباق | در صورت شکست عملیات جبرانی، خطا باید در Audit Log ثبت، هشدار Critical ارسال، و درخواست به Dead Letter Queue منتقل شود. | `IF (compensation_action_failed) THEN (log_to_audit = TRUE, send_critical_alert = TRUE, enqueue_to_dlq = TRUE)` | بحرانی | تأییدشده |
 
 ---
 
@@ -119,10 +117,10 @@
 | BR‑016 | امتیاز اطمینان دانش | مدیریت دانش | دانش و زمینه | هر واحد دانش باید دارای امتیاز اطمینان (Confidence Score) باشد که بر اساس منبع و کیفیت استخراج محاسبه می‌شود. | `confidence_score = calculate(source_reliability, extraction_quality, validation_results)` | متوسط | تأییدشده |
 | BR‑017 | به‌روزرسانی دانش | مدیریت دانش | دانش و زمینه | دانش باید پس از هر تغییر در منبع اصلی، به‌روزرسانی شود. | `IF (source_updated) THEN (knowledge_update = TRUE, reindex = TRUE)` | بالا | تأییدشده |
 | BR‑018 | حذف دانش منسوخ | مدیریت دانش | دانش و زمینه | دانشی که منبع آن حذف شده یا نسخه جدیدی از آن موجود است، باید منسوخ شود. | `IF (source_deleted OR new_version_exists) THEN (mark_deprecated = TRUE)` | متوسط | تأییدشده |
-| BR‑086 | دوره انسوخ‌سازی هستان‌شناسی | مدیریت دانش | مدیریت دانش، دانش و زمینه | هر نسخه Major از هستان‌شناسی که منسوخ می‌شود، باید حداقل ۶ ماه قبل از حذف، به‌عنوان Deprecated اعلام شود. | `IF (ontology_version_deprecated) THEN (deprecation_period >= 6 months, notify_consumers = TRUE)` | بالا | پیشنهادی |
-| BR‑087 | پشتیبانی از نسخه‌های گراف دانش | مدیریت دانش | دانش و زمینه | موتور دانش و زمینه باید حداقل از ۲ نسخه Major اخیر گراف دانش پشتیبانی کند. | `IF (knowledge_context_engine_active) THEN (supported_graph_versions >= 2 major versions)` | بالا | پیشنهادی |
-| BR‑088 | Fallback در صورت عدم تطابق نسخه گراف دانش | مدیریت دانش | دانش و زمینه | در صورت عدم تطابق نسخه گراف دانش، موتور دانش و زمینه باید به‌طور خودکار به نسخه پایدار قبلی Fallback کند. | `IF (graph_version_mismatch) THEN (fallback_to_previous_stable_version = TRUE, log_warning = TRUE)` | بالا | پیشنهادی |
-| BR‑089 | دسترسی انحصاری به گراف دانش از طریق موتور دانش | مدیریت دانش | دانش و زمینه، عامل‌ها و هماهنگی | تمام درخواست‌های مربوط به داده‌های گراف دانش (از جمله از سوی Agentها) باید منحصراً از طریق موتور دانش و زمینه (`Knowledge & Context Engine`) انجام شود. دسترسی مستقیم Agentها یا هر دامنه‌ی دیگری به Graph Query Service ممنوع است. | `IF (agent_or_component_requests_graph_directly) THEN (reject_request = TRUE, log_violation = TRUE)` | بحرانی | پیشنهادی |
+| BR‑086 | دوره انسوخ‌سازی هستان‌شناسی | مدیریت دانش | مدیریت دانش، دانش و زمینه | هر نسخه Major از هستان‌شناسی که منسوخ می‌شود، باید حداقل ۶ ماه قبل از حذف، به‌عنوان Deprecated اعلام شود. | `IF (ontology_version_deprecated) THEN (deprecation_period >= 6 months, notify_consumers = TRUE)` | بالا | تأییدشده |
+| BR‑087 | پشتیبانی از نسخه‌های گراف دانش | مدیریت دانش | دانش و زمینه | موتور دانش و زمینه باید حداقل از ۲ نسخه Major اخیر گراف دانش پشتیبانی کند. | `IF (knowledge_context_engine_active) THEN (supported_graph_versions >= 2 major versions)` | بالا | تأییدشده |
+| BR‑088 | Fallback در صورت عدم تطابق نسخه گراف دانش | مدیریت دانش | دانش و زمینه | در صورت عدم تطابق نسخه گراف دانش، موتور دانش و زمینه باید به‌طور خودکار به نسخه پایدار قبلی Fallback کند. | `IF (graph_version_mismatch) THEN (fallback_to_previous_stable_version = TRUE, log_warning = TRUE)` | بالا | تأییدشده |
+| BR‑089 | دسترسی انحصاری به گراف دانش از طریق موتور دانش | مدیریت دانش | دانش و زمینه، عامل‌ها و هماهنگی | تمام درخواست‌های مربوط به داده‌های گراف دانش (از جمله از سوی Agentها) باید منحصراً از طریق موتور دانش و زمینه (`Knowledge & Context Engine`) انجام شود. دسترسی مستقیم Agentها یا هر دامنه‌ی دیگری به Graph Query Service ممنوع است. | `IF (agent_or_component_requests_graph_directly) THEN (reject_request = TRUE, log_violation = TRUE)` | بحرانی | تأییدشده |
 
 ---
 
@@ -186,6 +184,25 @@
 | BR‑044 | مقیاس‌پذیری خودکار | عملیاتی | زیرساخت و عملیات | در صورت افزایش بار، منابع به‌صورت خودکار مقیاس‌دهی می‌شوند. | `IF (load > SCALE_UP_THRESHOLD) THEN (scale_up_resources = TRUE)` | بالا | تأییدشده |
 | BR‑045 | پشتیبان‌گیری دوره‌ای | عملیاتی | زیرساخت و عملیات | پشتیبان‌گیری خودکار از داده‌های حیاتی باید به‌صورت دوره‌ای انجام شود. | `IF (backup_schedule == "daily") THEN (run_backup = TRUE)` | بحرانی | تأییدشده |
 | BR‑046 | محدودیت نرخ درخواست (Rate Limiting) | عملیاتی | یکپارچه‌سازی و API | هر Tenant و هر کاربر دارای سقف مجاز درخواست در بازه زمانی مشخص است. | `IF (request_count > RATE_LIMIT) THEN (reject_request = TRUE, return_429 = TRUE)` | بالا | تأییدشده |
+| BR‑122 | دسترس‌پذیری و رفتار Policy Decision Point (PDP) | عملیاتی | حاکمیت و انطباق | `policy-engine-service` (PDP) باید با هدف دسترس‌پذیری ≥ ۹۹.۹۵٪ استقرار یابد. در صورت عدم دسترسی به PDP، رفتار زیر اعمال می‌شود: (۱) برای عملیات با سطح ریسک Critical/High: **Fail Closed** بدون استثنا — درخواست رد می‌شود. (۲) برای عملیات با سطح ریسک Medium/Low: PEP می‌تواند از کش محلی تصمیمات اخیر با حداکثر TTL ۳۰ ثانیه استفاده کند، مشروط بر اینکه تصمیم کش‌شده `Allow` بوده و برای همان ترکیب (کاربر، منبع، عملیات) معتبر باشد. معیار تشخیص سطح ریسک در `Governance_&_Compliance_Domain_Architecture` (بخش ۴.۲.۱) تعریف شده است. | `IF (pdp_unavailable AND operation_risk_level IN ["Critical", "High"]) THEN (fail_closed = TRUE); IF (pdp_unavailable AND operation_risk_level IN ["Medium", "Low"]) THEN (use_local_cache_with_ttl_30s = TRUE, only_allow_decisions = TRUE)` | بحرانی | تأییدشده |
+| BR‑123 | پیروی از سیاست یکپارچه Retry و Timeout | عملیاتی | همه دامنه‌ها | تمام دامنه‌ها باید از سیاست یکپارچه Retry و Timeout تعریف‌شده در `Non_Functional_Requirements_And_SLA` (بخش ۶.۱ و ۶.۲) پیروی کنند. مقادیر پیش‌فرض (حداکثر ۳ Retry، Exponential Backoff با Jitter، حداکثر زمان کل ۶۰ ثانیه) فقط در صورت وجود توجیه مستند قابل تغییر هستند. | `IF (retry_or_timeout_configured) THEN (comply_with_global_policy = TRUE, document_deviation_if_any = TRUE)` | بالا | تأییدشده |
+| BR‑124 | ثبت کامل تصمیمات Human-in-the-Loop | عملیاتی | همه دامنه‌ها | تمام تصمیمات Human-in-the-Loop (تأیید، رد، اصلاح) باید با جزئیات کامل در Audit Log ثبت شوند. اطلاعات ثبت‌شده شامل: شناسه کاربر تأییدکننده، زمان تصمیم، نوع تصمیم، دلیل (در صورت وجود)، Context مرتبط، و شناسه گردش‌کار یا Task مرتبط است. | `IF (human_decision_made) THEN (log_to_audit_with_full_details = TRUE)` | بحرانی | تأییدشده |
+| BR‑125 | انتقال هویت در رویدادهای Agent Task | عملیاتی | عامل‌ها و هماهنگی، مدیریت جریان کار | در رویدادهای `AgentTaskRequested`، هویت کاربر اصلی (JWT Token یا مرجع آن) باید به‌گونه‌ای منتقل شود که Agent بتواند عملیات را با هویت اصلی کاربر اجرا و مجوزدهی کند. در صورت عدم امکان انتقال توکن کامل، حداقل `actor_id` و `actor_type` در Envelope رویداد الزامی است. | `IF (agent_task_requested) THEN (propagate_user_identity = TRUE, include_actor_id = TRUE)` | بالا | تأییدشده |
+
+---
+
+### ۵.۹. قوانین چند-مستأجری و هزینه (Multi-Tenancy & Cost Rules)
+
+| شناسه | عنوان | دسته‌بندی | دامنه‌های مرتبط | شرح | بیان منطقی | اولویت | وضعیت |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| BR‑113 | الزام فیلد Tenant در تمام موجودیت‌ها | چند-مستأجری | همه دامنه‌ها | هر رکورد داده، پیام رویداد و ورودی Cache باید دارای فیلد `tenant_id` باشد. | `IF (entity_created) THEN (tenant_id_required = TRUE)` | بحرانی | تأییدشده |
+| BR‑114 | ممنوعیت Query بدون فیلتر Tenant | چند-مستأجری | همه دامنه‌ها | هیچ Query در پایگاه داده مشترک نباید بدون شرط `tenant_id` اجرا شود. این الزام باید در سطح Code Review و در صورت امکان در سطح RLS پایگاه داده اعمال شود. | `IF (query_without_tenant_filter) THEN (reject_query = TRUE)` | بحرانی | تأییدشده |
+| BR‑115 | دوره حداکثر تعلیق Tenant | چند-مستأجری | حاکمیت و انطباق | یک Tenant با وضعیت Suspended نباید بیش از ۹۰ روز بدون تصمیم‌گیری باقی بماند. در صورت عبور از این مدت، Tenant باید به‌صورت خودکار به Offboarding منتقل شود. | `IF (suspended_duration > 90 days) THEN (start_offboarding = TRUE)` | بالا | تأییدشده |
+| BR‑116 | حذف امن پس از Offboarding | چند-مستأجری | همه دامنه‌ها | داده‌های یک Tenant باید حداکثر ۳۰ روز پس از پایان دوره Data Export، به‌طور کامل و امن حذف شوند. | `IF (data_export_window_ended) THEN (secure_purge = TRUE, within_30_days = TRUE)` | بحرانی | تأییدشده |
+| BR‑117 | آستانه Collection اختصاصی در Vector DB | چند-مستأجری | دانش و زمینه | Tenantهایی با بیش از ۱۰۰٬۰۰۰ بردار نمایه‌شده باید در Collection مجزا از سایر Tenantها ذخیره شوند. | `IF (tenant_vector_count > 100,000) THEN (use_dedicated_collection = TRUE)` | بالا | تأییدشده |
+| BR‑118 | هشدار هزینه Tenant | هزینه | مدیریت مدل‌ها، زیرساخت و عملیات | در صورت عبور هزینه Tenant از ۸۰٪ سقف تعیین‌شده، هشدار `WARNING` و در صورت عبور از ۱۰۰٪، هشدار `CRITICAL` ارسال شود. | `IF (tenant_cost > 0.8 * budget) THEN (send_warning_alert = TRUE); IF (tenant_cost > budget) THEN (send_critical_alert = TRUE, restrict_low_priority_requests = TRUE)` | بالا | تأییدشده |
+| BR‑119 | انتخاب مدل آگاه از هزینه | هزینه | مدیریت مدل‌ها | انتخاب مدل باید بر اساس هزینه نیز انجام شود و Tenantها بتوانند سیاست هزینه خود را تنظیم کنند. برای Taskهای غیرحساس، مدل‌های ارزان‌تر ترجیح داده می‌شوند. | `IF (model_selection) THEN (consider_cost = TRUE, apply_tenant_cost_policy = TRUE)` | متوسط | تأییدشده |
+| BR‑120 | محدودیت هزینه Tenant | هزینه | مدیریت مدل‌ها، زیرساخت و عملیات | هر Tenant دارای سقف هزینه ماهانه است و در صورت عبور از آن، درخواست‌های جدید با اولویت پایین محدود می‌شوند. | `IF (tenant_cost > budget) THEN (reject_low_priority_requests = TRUE, notify_admin = TRUE)` | بالا | تأییدشده |
 
 ---
 
@@ -210,14 +227,19 @@
 | نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Domain Landscape` | مرجع دامنه‌هایی که قوانین در آن‌ها اعمال می‌شوند |
-| `Context Map` | مرجع الگوهای تعامل که قوانین در مرزهای دامنه‌ها اعمال می‌شوند |
-| `Domain Dependency Map` | مرجع وابستگی‌های دامنه‌ها که قوانین ممکن است بر آن‌ها تأثیر بگذارند |
+| `Context_Map` | مرجع الگوهای تعامل که قوانین در مرزهای دامنه‌ها اعمال می‌شوند |
+| `Domain_Dependency_Map` | مرجع وابستگی‌های دامنه‌ها که قوانین ممکن است بر آن‌ها تأثیر بگذارند |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع Componentها که قوانین بر روی آن‌ها پیاده‌سازی می‌شوند |
-| `Data_Governance_and_Compliance` | مرجع حاکمیت داده که قوانین BR‑007 تا BR‑۰۱۲ با آن هم‌راستا هستند |
-| `Security_and_Privacy_Architecture` | مرجع کنترل‌های امنیتی که قوانین BR‑۰۰۱ تا BR‑۰۰۶ با آن هم‌راستا هستند |
+| `Data_Governance_and_Compliance` | مرجع حاکمیت داده که قوانین BR‑۰۰۷ تا BR‑۰۱۲ و BR‑۰۷۹ تا BR‑۰۸۳ با آن هم‌راستا هستند |
+| `Security_and_Privacy_Architecture` | مرجع کنترل‌های امنیتی که قوانین BR‑۰۰۱ تا BR‑۰۰۶ و BR‑۱۲۱ با آن هم‌راستا هستند |
 | `Responsible_AI_Guidelines` | مرجع هوش مصنوعی مسئولانه که قوانین BR‑۰۳۶ تا BR‑۰۴۱ با آن هم‌راستا هستند |
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع امنیت ابزارها که قوانین BR‑۰۲۴ تا BR‑۰۲۹ با آن هم‌راستا هستند |
 | `Policy_Management_Service_Design` | مرجع پیاده‌سازی Policy Engine که اجرای قوانین را خودکار می‌کند |
+| `Multi_Tenancy_Architecture` | مرجع قوانین چند-مستأجری و هزینه در بخش ۵.۹ |
+| `Non_Functional_Requirements_And_SLA` | مرجع سیاست یکپارچه Retry و Timeout که قانون BR‑۱۲۳ به آن ارجاع می‌دهد |
+| `Governance_&_Compliance_Domain_Architecture` | مرجع رفتار Fail-Closed PDP که قانون BR‑۱۲۲ به آن ارجاع می‌دهد |
+| `Versioning_And_Compatibility_Strategy` | مرجع استراتژی نسخه‌گذاری که قوانین BR‑۰۸۶ تا BR‑۰۸۸ با آن هم‌راستا هستند |
+| `Transaction_And_Compensation_Strategy` | مرجع مدیریت جبران که قوانین BR‑۰۸۴ و BR‑۰۸۵ به آن ارجاع می‌دهند |
 
 ---
 
@@ -225,7 +247,7 @@
 
 این سند فهرست جامع قوانین کسب‌وکار پلتفرم را جمع‌آوری و دسته‌بندی می‌کند و تضمین می‌کند که منطق حیاتی سیستم با درک دقیق توسط تیم‌های توسعه پیاده‌سازی شود. قوانین مستندشده در این سند، مبنای طراحی، پیاده‌سازی و آزمون قابلیت‌های پلتفرم هستند و هرگونه تغییر در آن‌ها باید از طریق فرآیند مدیریت تغییرات کنترل‌شده انجام شود.
 
-رعایت اصول و ساختار تعریف‌شده در این سند، شفافیت، قابلیت رهگیری و یکپارچگی منطق کسب‌وکار پلتفرم را تضمین می‌کند و از پیاده‌سازی‌های نادرست یا متناقض جلوگیری می‌نماید.
+با اضافه شدن قوانین جدید در حوزه‌های حق فراموشی (BR‑۰۷۹ تا BR‑۰۸۳)، نسخه‌گذاری گراف دانش (BR‑۰۸۶ تا BR‑۰۸۹)، مدیریت هزینه (BR‑۱۱۸ تا BR‑۱۲۰)، و الزامات عملیاتی حیاتی (BR‑۱۲۲ تا BR‑۱۲۵)، پوشش کاملی از الزامات معماری بازبینی‌شده فراهم شده است. رعایت اصول و ساختار تعریف‌شده در این سند، شفافیت، قابلیت رهگیری و یکپارچگی منطق کسب‌وکار پلتفرم را تضمین می‌کند و از پیاده‌سازی‌های نادرست یا متناقض جلوگیری می‌نماید.
 
 **مسئولیت به‌روزرسانی:** تیم محصول به همراه تیم‌های امنیت، حاکمیت داده و معماری مسئول بازبینی دوره‌ای این سند، به‌روزرسانی قوانین بر اساس تغییرات نیازمندی‌های کسب‌وکار و قوانین جدید هستند. تمام تغییرات باید از طریق فرآیند مدیریت تغییرات ثبت و پیگیری شوند.
 

@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # سند توپولوژی استقرار و محیط‌ها (Deployment & Environment Topology)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.2
+**نسخه:** 1.3
 
-**وضعیت:** پیش‌نویس بازبینی‌شده
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -86,6 +85,26 @@ Clients → API Gateway → Platform Services → AI Runtime → Knowledge Servi
 - **دروازه ورودی (Ingress Gateway):** نقطه ورود ترافیک به داخل Cluster
 - **شبکه سرویس (Service Mesh) — اختیاری:** لایه مدیریت ترافیک بین سرویس‌ها برای مشاهده‌پذیری و کنترل امنیتی بیشتر
 
+**راهبرد مقیاس‌پذیری سرویس گراف دانش (Knowledge Graph Service):**
+
+با توجه به ماهیت سنگین پایگاه داده گرافی و نقش حیاتی گراف دانش در عملکرد پلتفرم، راهبرد مقیاس‌پذیری زیر برای `knowledge-graph-service` اعمال می‌شود:
+
+| معیار | راهبرد |
+| :--- | :--- |
+| **مقیاس‌پذیری افقی** | استفاده از پایگاه داده گرافی با پشتیبانی از Cluster (مانند Neo4j Causal Cluster) با قابلیت افزودن گره‌های Read Replica برای Queryهای سنگین. |
+| **جداسازی Tenant** | هر Tenant با حجم داده بالا (بیش از ۵۰۰٬۰۰۰ موجودیت) باید در یک Cluster مجزا یا با استفاده از پارتیشن‌بندی (Sharding) بر اساس `tenant_id` در همان Cluster مدیریت شود. |
+| **Cache لایه‌بندی‌شده** | پیاده‌سازی Cache دو‌سطحه: (۱) Cache محلی در `knowledge-graph-service` برای Queryهای پرتکرار با TTL کوتاه، (۲) Cache مرکزی (Redis) برای نتایج Queryهای سنگین با TTL طولانی‌تر. |
+| **محدودیت Query** | اعمال محدودیت عمق پیمایش (Depth Limit) و تعداد نتایج بازگشتی (Result Limit) برای جلوگیری از Queryهای سنگین که می‌توانند کلuster را تحت تأثیر قرار دهند. |
+| **پایش عملکرد** | پایش مستمر زمان پاسخ Queryها، تعداد Queryهای همزمان، و مصرف حافظه برای تشخیص نیاز به مقیاس‌دهی. |
+
+**معیارهای مقیاس‌دهی خودکار برای `knowledge-graph-service`:**
+
+| متریک | آستانه مقیاس‌دهی | اقدام |
+| :--- | :--- | :--- |
+| **میانگین زمان پاسخ Query** | > ۵۰۰ms به‌مدت ۵ دقیقه | افزایش Replica (افقی) |
+| **تعداد Queryهای همزمان** | > ۱۰۰ به‌مدت ۲ دقیقه | افزایش Replica (افقی) |
+| **مصرف حافظه Node** | > ۸۰٪ به‌مدت ۳ دقیقه | افزایش منابع (عمودی) یا مهاجرت Tenant به Cluster مجزا |
+
 ---
 
 # ۷. لایه داده (Data Layer)
@@ -163,6 +182,9 @@ Source → Build → Test → Security Scan → Deploy Dev → Staging Approval 
 | `Multi_Tenancy_Architecture` | مرجع تفصیلی مدل چند‑مستأجری که بخش ۴ این سند خلاصه سطح استقرار آن است |
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع کامل Zero Trust و احراز هویت سرویس‌به‌سرویس اشاره‌شده در بخش ۸ همین سند |
 | `Governance_And_Platform_Services_Design` | مرجع پیاده‌سازی سرویس‌های مدیریت پیکربندی و اسرار که در بخش ۱۲ به آن‌ها اشاره شده است |
+| `Knowledge_Management_Domain_Architecture` | مرجع جزئیات مقیاس‌پذیری گراف دانش که این سند راهبرد سطح استقرار آن را تعیین می‌کند |
+| `Infrastructure_&_Operations_Domain_Architecture` | مرجع پیاده‌سازی زیرساختی Resource Quota و مدیریت Cluster که با بخش ۶ این سند هم‌راستا است |
+| `Deployment_Environment_Topology` (خود این سند) | مرجع اصلی توپولوژی استقرار |
 
 ---
 

@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # سند مرور قراردادهای API (API Contract Overview)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.1
+**نسخه:** 1.2
 
-**وضعیت:** پیش‌نویس بازبینی‌شده
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -100,7 +99,7 @@
 ```
 مصرف‌کننده (Knowledge & Context Engine) موظف است در صورت دریافت این خطا، درخواست را با یکی از نسخه‌های پشتیبانی‌شده تکرار کند یا درخواست را لغو کند.
 
-−−−
+---
 
 ## ۵. Metadata استاندارد درخواست (Standard Request Metadata)
 
@@ -174,7 +173,7 @@
 }
 ```
 
-−−−
+---
 
 ### ۶.۱. فیلدهای پاسخ Tool Execution API
 
@@ -228,6 +227,33 @@
 - **امنیت ارتباط داخلی:** ارتباط بین Componentهای داخلی با mTLS (Mutual TLS) محافظت می‌شود تا هویت هر دو طرف تأیید و ارتباط رمزگذاری شود.
 - **محدودیت نرخ (Rate Limiting):** هر Tenant و هر کاربر دارای سقف مجاز درخواست در بازه زمانی مشخص است تا از سوءاستفاده و مصرف بیش از حد منابع جلوگیری شود. این محدودیت توسط Governance & Platform Services اعمال می‌شود.
 - **پنهان‌سازی داده (Data Masking):** در صورت ارسال داده‌های حساس به مدل‌های خارجی (از طریق Model Management Engine)، داده‌های حساس (مانند اطلاعات شخصی، اطلاعات محرمانه) بر اساس Policyهای تعریف‌شده Mask یا فیلتر می‌شوند.
+- **هدرهای امنیتی مورد نیاز (Required Security Headers):** تمام پاسخ‌های API باید شامل هدرهای امنیتی زیر باشند:
+
+| Header | مقدار | توضیح |
+| :--- | :--- | :--- |
+| `X-Content-Type-Options` | `nosniff` | جلوگیری از MIME-type sniffing |
+| `X-Frame-Options` | `DENY` | جلوگیری از Clickjacking |
+| `Content-Security-Policy` | `default-src 'none'` | جلوگیری از XSS و حملات تزریق |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | اعمال HTTPS برای تمام درخواست‌ها |
+| `X-XSS-Protection` | `1; mode=block` | جلوگیری از XSS (برای مرورگرهای قدیمی) |
+
+- **هدرهای محدودیت نرخ (Rate Limiting Headers):** تمام پاسخ‌های API باید شامل هدرهای زیر برای اطلاع‌رسانی وضعیت محدودیت نرخ باشند:
+
+| Header | توضیح |
+| :--- | :--- |
+| `X-RateLimit-Limit` | تعداد درخواست‌های مجاز در بازه زمانی |
+| `X-RateLimit-Remaining` | تعداد درخواست‌های باقی‌مانده |
+| `X-RateLimit-Reset` | زمان بازنشانی محدودیت (Unix Timestamp) |
+
+- **هدرهای انسوخ‌سازی (Deprecation Headers):** برای APIهای منسوخ‌شده، هدرهای زیر باید در پاسخ بازگردانده شوند:
+
+| Header | توضیح |
+| :--- | :--- |
+| `Deprecation` | تاریخ انقضای پشتیبانی (به‌صورت HTTP Date یا DateTime) |
+| `Sunset` | تاریخ حذف نهایی API (اختیاری) |
+| `Link` | `rel="deprecation"` برای ارجاع به مستندات جایگزین |
+
+- **هدر همبستگی (Correlation Header):** تمام درخواست‌ها و پاسخ‌ها باید شامل هدر `X-Correlation-ID` برای ردیابی سرتاسری باشند. اگر کلاینت این هدر را ارسال نکند، API Gateway یک شناسه جدید تولید می‌کند.
 
 **انتقال هویت در زنجیره داخلی (Identity Propagation):**
 
@@ -294,6 +320,7 @@
 | `Deployment_Environment_Topology` | مرجع لایه داده (Vector Database، Search Engine) و Multi-Tenancy که در بخش‌های ۴ و ۵ به آن‌ها اشاره شده است. |
 | `Non_Functional_Requirements_And_SLA` | مرجع اهداف کارایی و در دسترس‌پذیری عمومی که SLA بخش ۱۲ مکمل آن است. همچنین مرجع Observability و Logging که رویدادهای بخش ۱۰ به آن‌ها ارسال می‌شوند. |
 | `Risk_And_Failure_Mode_Analysis` | مرجع سناریوهای خرابی و راهکارهای کاهش ریسک که بر طراحی Retry، Fallback و Error Handling در قراردادها تأثیر گذاشته است. |
+| `Versioning_And_Compatibility_Strategy` | مرجع قواعد پایه نسخه‌بندی و سیاست Deprecation که بخش ۸ بر اساس آن است. |
 
 ---
 

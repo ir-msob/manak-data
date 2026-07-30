@@ -5,9 +5,9 @@
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.0
+**نسخه:** 1.1
 
-**وضعیت:** پیش‌نویس
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -39,6 +39,7 @@
 - **Execution Agent:** اجرای واقعی Toolها و Workflowها
 - **Memory Agent:** ذخیره و بازیابی تجربیات و حافظه
 - **Human‑in‑the‑Loop Agent:** مدیریت تأییدات انسانی برای عملیات حساس
+- **Agent Capability Registry:** ثبت و کشف قابلیت‌های عامل‌ها
 - **مدیریت چرخه حیات Agent:** ایجاد، فعال‌سازی، اجرا، غیرفعال‌سازی و حذف
 - **هماهنگی چند‑Agent:** همکاری، ارتباط و حل تعارض بین عامل‌ها
 - **پایش و مشاهده‌پذیری:** پایش عملکرد، سلامت و تصمیمات عامل‌ها
@@ -84,7 +85,7 @@
 **مسئولیت‌های حاکمیتی:**
 
 - مدیریت ثبت و حذف عامل‌ها
-- تخصیص عامل مناسب بر اساس قابلیت‌ها (Capability)
+- تخصیص عامل مناسب بر اساس قابلیت‌ها (Capability) از طریق **Agent Capability Registry**
 - مدیریت وضعیت اجرای عامل‌ها
 - اعمال سیاست‌های امنیتی و محدودیت‌های اجرایی
 - مدیریت زمان‌بندی اجرای عامل‌ها
@@ -93,6 +94,7 @@
 - جلوگیری از اجرای هم‌زمان عملیات ناسازگار
 
 **جریان هماهنگی (Orchestration Flow):**
+
 ```text
 User Request
         │
@@ -103,7 +105,7 @@ Orchestrator دریافت Task
         │
         ├── ارسال به Planner برای تجزیه Task
         │
-        ├── تخصیص زیروظایف به Agentهای مناسب
+        ├── تخصیص زیروظایف به Agentهای مناسب (با استفاده از Capability Registry)
         │
         ├── نظارت بر اجرا و جمع‌آوری نتایج
         │
@@ -234,6 +236,56 @@ Orchestrator دریافت Task
 
 ---
 
+### ۴.۹. Agent Capability Registry (ثبت قابلیت عامل‌ها) — **جدید**
+
+**مسئولیت:** ثبت، نگهداری و کشف قابلیت‌های عامل‌های موجود در پلتفرم.
+
+**وظایف کلیدی:**
+
+- **ثبت قابلیت:** ثبت قابلیت‌های هر Agent شامل نوع Agent، Taskهای قابل انجام، منابع موردنیاز، وابستگی‌ها و محدودیت‌ها
+- **کشف قابلیت:** ارائه API برای جستجو و کشف Agentهای مناسب بر اساس قابلیت‌های موردنیاز
+- **مدیریت چرخه حیات:** فعال/غیرفعال‌سازی، به‌روزرسانی و حذف قابلیت‌های Agent
+- **اعتبارسنجی:** اعتبارسنجی قابلیت‌های ثبت‌شده برای اطمینان از صحت و عدم تناقض
+
+**فیلدهای کلیدی Agent Capability Registry:**
+
+| فیلد | توضیح |
+| :--- | :--- |
+| `capability_id` | شناسه یکتای قابلیت |
+| `agent_type` | نوع Agent (Orchestrator, Planner, Reviewer, Knowledge, Tool, Execution, Memory) |
+| `supported_task_types` | لیست Taskهای قابل انجام |
+| `required_resources` | منابع موردنیاز (حافظه، CPU، GPU، Token) |
+| `dependencies` | وابستگی‌های Agent به سایر Agentها یا سرویس‌ها |
+| `constraints` | محدودیت‌های اجرایی (حداکثر زمان، همزمانی) |
+| `status` | وضعیت (Active, Inactive, Deprecated) |
+| `version` | نسخه قابلیت |
+| `owner_team` | تیم مالک |
+| `created_at` | زمان ثبت |
+| `updated_at` | زمان آخرین به‌روزرسانی |
+
+**الگوریتم تطابق قابلیت (Capability Matching):**
+
+```text
+1. دریافت درخواست Task با مشخصات موردنیاز
+2. فیلتر Agentها بر اساس `supported_task_types`
+3. فیلتر Agentها بر اساس `required_resources` موجود
+4. فیلتر Agentها بر اساس `constraints` (زمان، همزمانی)
+5. امتیازدهی به Agentها بر اساس:
+   - تطابق دقیق Task type
+   - منابع موجود
+   - سابقه موفقیت
+   - بار پردازشی فعلی
+6. انتخاب Agent با بالاترین امتیاز
+7. در صورت عدم وجود Agent مناسب → ارسال خطا یا Fallback
+```
+
+**رابط‌های دسترسی:**
+
+- **API:** ارائه REST API برای جستجو و دریافت اطلاعات قابلیت‌ها
+- **Event:** انتشار رویدادهای تغییر در Registry برای اطلاع‌رسانی به Orchestrator
+
+---
+
 ## ۵. چرخه حیات عامل (Agent Lifecycle)
 
 هر عامل در پلتفرم از مراحل زیر عبور می‌کند:
@@ -269,6 +321,8 @@ Creation → Activation → Execution → Deactivation → Destruction
 | Cancelled | اجرای عامل توسط کاربر یا سیستم لغو شده است. |
 | Destroyed | عامل از حافظه سیستم حذف شده است. |
 
+---
+
 ## ۶. الگوهای هماهنگی (Coordination Patterns)
 
 | الگو | توضیح | کاربرد |
@@ -283,7 +337,7 @@ Creation → Activation → Execution → Deactivation → Destruction
 
 ### ۶.۱. راهبرد انتخاب عامل (Agent Selection Strategy)
 
-هماهنگ‌کننده (Agent Orchestrator) عامل مناسب را بر اساس مجموعه‌ای از معیارها انتخاب می‌کند.
+هماهنگ‌کننده (Agent Orchestrator) عامل مناسب را بر اساس مجموعه‌ای از معیارها از طریق **Agent Capability Registry** انتخاب می‌کند.
 
 - قابلیت‌های عامل (Capability Matching)
 - مجوزهای امنیتی
@@ -419,7 +473,9 @@ Creation → Activation → Execution → Deactivation → Destruction
 
 دامنه **عامل‌ها** به‌عنوان **هسته هوشمندی پلتفرم**، نقش حیاتی در تبدیل درخواست‌های کاربر به اقدامات معنادار و قابل اجرا ایفا می‌کند. معماری تعریف‌شده در این سند، چارچوبی استاندارد، مقیاس‌پذیر، قابل اعتماد و توسعه‌پذیر برای مدیریت عامل‌های هوشمند، هماهنگی بین آن‌ها و تعامل با سایر دامنه‌های پلتفرم فراهم می‌آورد.
 
-رعایت اصول طراحی (Coordinator‑Driven Orchestration، Single Responsibility، Tool‑First Execution، Security & Governance، Explainability) و پیاده‌سازی مؤلفه‌های کلیدی (Orchestrator، Planner، Reviewer، Knowledge Agent، Tool Agent، Execution Agent، Memory Agent) تضمین می‌کند که پلتفرم بتواند وظایف پیچیده را به‌صورت هوشمندانه، امن و قابل اعتماد مدیریت کند و در عین حال قابلیت توسعه، نگهداری و مشاهده‌پذیری بلندمدت را حفظ کند.
+با افزودن مؤلفه **Agent Capability Registry** (بخش ۴.۹)، قابلیت کشف و تخصیص پویای عامل‌ها بر اساس قابلیت‌های آن‌ها فراهم شده است که انعطاف‌پذیری و توسعه‌پذیری سیستم را به‌طور قابل‌توجهی افزایش می‌دهد.
+
+رعایت اصول طراحی (Coordinator‑Driven Orchestration، Single Responsibility، Tool‑First Execution، Security & Governance، Explainability) و پیاده‌سازی مؤلفه‌های کلیدی (Orchestrator، Planner، Reviewer، Knowledge Agent، Tool Agent، Execution Agent، Memory Agent، Human‑in‑the‑Loop Agent، Capability Registry) تضمین می‌کند که پلتفرم بتواند وظایف پیچیده را به‌صورت هوشمندانه، امن و قابل اعتماد مدیریت کند و در عین حال قابلیت توسعه، نگهداری و مشاهده‌پذیری بلندمدت را حفظ کند.
 
 **مسئولیت به‌روزرسانی:** تیم معماری به همراه تیم‌های توسعه، هوش مصنوعی و محصول مسئول بازبینی دوره‌ای این سند، به‌روزرسانی آن بر اساس تغییرات نیازمندی‌های هوش مصنوعی، الگوهای جدید هماهنگی و بازخورد تیم‌های پیاده‌سازی هستند.
 

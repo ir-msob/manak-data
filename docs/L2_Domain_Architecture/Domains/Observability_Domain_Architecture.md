@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # معماری دامنه مشاهده‌پذیری (Observability Domain Architecture)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.0
+**نسخه:** 1.1
 
-**وضعیت:** پیش‌نویس
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -209,7 +208,7 @@
 
 - استفاده از `trace_id` و `correlation_id` به‌عنوان کلیدهای مشترک در تمام داده‌ها
 - استفاده از Grafana برای ترکیب داده‌های Prometheus (Metrics)، Loki (Logs) و Tempo (Traces) در یک داشبورد واحد (Grafana Explore با قابلیت Jump‑to‑Logs و Jump‑to‑Traces)
- 
+
 **استاندارد شناسه‌های همبستگی:**
 
 تمام درخواست‌ها باید دارای `correlation_id` باشند.
@@ -322,26 +321,78 @@
 
 ---
 
-### ۴.۱۰. Data Retention & Lifecycle Management (مدیریت چرخه عمر و نگهداری داده)
+### ۴.۱۰. داده‌های مشاهده‌پذیری ویژه Agent و Human-in-the-Loop
 
-**مسئولیت:** مدیریت دوره نگهداری، بایگانی و حذف داده‌های مشاهده‌پذیری بر اساس سیاست‌ها.
+**مسئولیت:** جمع‌آوری و نمایش داده‌های مشاهده‌پذیری ویژه برای تصمیمات Agent و Human-in-the-Loop.
 
-**سیاست‌های نگهداری:**
+**متریک‌های Agent:**
 
-| نوع داده | دوره نگهداری (Hot) | دوره نگهداری (Cold/Archive) | نرخ Sample |
+| متریک | توضیح |
+| :--- | :--- |
+| **Agent Decision Count** | تعداد تصمیمات اتخاذشده توسط هر Agent |
+| **Agent Decision Success Rate** | درصد تصمیمات موفق |
+| **Agent Decision Failure Rate** | درصد تصمیمات ناموفق با جزئیات نوع خطا |
+| **Agent Decision Latency** | زمان بین دریافت Task و تصمیم‌گیری |
+| **Agent Execution Duration** | زمان کل اجرای هر Agent |
+| **Agent Error Distribution** | توزیع خطاهای Agent بر اساس نوع |
+
+**متریک‌های Human-in-the-Loop:**
+
+| متریک | توضیح |
+| :--- | :--- |
+| **HITL Request Count** | تعداد درخواست‌های تأیید انسانی |
+| **HITL Approval Rate** | درصد تأییدهای انسانی |
+| **HITL Rejection Rate** | درصد ردهای انسانی |
+| **HITL Timeout Rate** | درصد درخواست‌های منقضی‌شده |
+| **HITL Average Response Time** | میانگین زمان پاسخ انسانی |
+
+**لاگ‌های Agent:**
+
+- تمام تصمیمات Agent باید با جزئیات کامل ثبت شوند.
+- شامل: `agent_id`, `task_id`, `decision_type`, `input_context_hash`, `output_summary`, `confidence_score`, `duration_ms`, `timestamp`
+- رعایت الزامات `Data_Governance_and_Compliance` برای ناشناس‌سازی داده‌های حساس.
+
+**لاگ‌های Human-in-the-Loop:**
+
+- تمام تصمیمات Human-in-the-Loop (تأیید، رد، اصلاح) باید با جزئیات کامل ثبت شوند.
+- شامل: `user_id` (تأییدکننده), `decision_type`, `reason` (اختیاری), `context_summary`, `workflow_id`, `task_id`, `timestamp`
+- مدت نگهداری: حداقل ۱ سال (طبق BR‑۱۲۴ و الزامات انطباق).
+
+**ردیابی (Tracing) Agent Decisions:**
+
+- هر تصمیم Agent باید با یک Span مشخص در Distributed Tracing ثبت شود.
+- Span شامل: `agent_id`, `task_id`, `parent_span_id` (در صورت وجود), `duration`, `status`, `metadata`
+- امکان ردیابی سرتاسری از User Request تا Agent Decision تا Tool Execution.
+
+---
+
+### ۴.۱۱. مدیریت نگهداری متریک‌ها (Metric Retention Management)
+
+**مسئولیت:** مدیریت دوره نگهداری و کاهش دقت (Downsampling) متریک‌ها.
+
+**سیاست‌های نگهداری متریک‌ها:**
+
+| نوع داده | دوره نگهداری (Hot) | دوره نگهداری (Warm) | نرخ نمونه‌برداری |
 | :--- | :--- | :--- | :--- |
-| **Metrics (جزئی)** | ۳۰ روز | ۱ سال (Downsampled) | — |
-| **Metrics (Aggregated)** | نامحدود (با کاهش دقت) | — | — |
-| **Logs (ساخت‌یافته)** | ۷ روز | ۳ ماه (فشرده) | — |
-| **Logs (خطا/امنیت)** | ۳۰ روز | ۱ سال | — |
-| **Traces** | ۷ روز | ۳۰ روز (Sampled) | ۱۰٪ (برای حفظ هزینه) |
-| **Alerts** | نامحدود | نامحدود | — |
+| **Metrics (جزئی - ۱ دقیقه)** | ۷ روز | ۳۰ روز (Aggregated) | — |
+| **Metrics (Aggregated - ۵ دقیقه)** | ۳۰ روز | ۱ سال | — |
+| **Metrics (Business - Token, Cost)** | ۳۰ روز | ۳ سال | — |
+| **Metrics (Aggregated - ۱ ساعت)** | ۱ سال | نامحدود (با کاهش دقت) | — |
+| **Custom Metrics (رسم‌شده)** | ۳۰ روز | قابل تنظیم | — |
 
-**Tiering داده‌ها:**
+**راهبرد Downsampling:**
 
-- **Hot Storage:** داده‌های عملیاتی با دسترسی سریع
-- **Warm Storage:** داده‌های کم‌استفاده با هزینه کمتر
-- **Cold Archive:** داده‌های آرشیوی برای الزامات قانونی و ممیزی
+| بازه زمانی | رزولوشن | توضیح |
+| :--- | :--- | :--- |
+| ۰ تا ۷ روز | ۱ دقیقه | داده‌های کامل برای عیب‌یابی |
+| ۷ تا ۳۰ روز | ۵ دقیقه | کاهش دقت برای تحلیل روند |
+| ۳۰ روز تا ۱ سال | ۱ ساعت | داده‌های خلاصه برای تحلیل سالانه |
+| بیش از ۱ سال | ۱ روز | داده‌های Aggregate برای گزارش‌دهی بلندمدت |
+
+**ذخیره‌سازی سرد (Cold Storage):**
+
+- متریک‌های قدیمی‌تر از ۱ سال به Cold Storage (مانند S3 Glacier) منتقل می‌شوند.
+- دسترسی به Cold Storage با تأخیر بیشتر (چند ساعت) برای تحلیل‌های تاریخی امکان‌پذیر است.
 
 ---
 

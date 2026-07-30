@@ -4,9 +4,9 @@
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.0
+**نسخه:** 1.1
 
-**وضعیت:** پیش‌نویس
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -26,7 +26,7 @@
 
 | اصل | توضیح |
 | :--- | :--- |
-| **واحد استقرار مستقل از واحد Domain است** | یک Domain непременно به یک Service معادل نیست؛ ممکن است چند Domain کوچک درون یک Service ادغام شوند یا یک Domain به چند Service تقسیم شود. |
+| **واحد استقرار مستقل از واحد Domain است** | یک Domain لزوماً به یک Service معادل نیست؛ ممکن است چند Domain کوچک درون یک Service ادغام شوند یا یک Domain به چند Service تقسیم شود. |
 | **معیار تفکیک: نرخ تغییر، الگوی بار، و حساسیت SLA** | دامنه‌هایی با نرخ تغییر بالا، الگوی مقیاس‌دهی متفاوت، یا SLA حیاتی، باید Service مستقل داشته باشند. |
 | **معیار ادغام: هم‌بار بودن و وابستگی زمان‌کامپایل مشترک** | دامنه‌هایی که همیشه با هم Deploy و Scale می‌شوند و به ندرت مستقل تغییر می‌کنند، می‌توانند در یک Service ادغام شوند تا از سربار عملیاتی غیرضروری Microservices جلوگیری شود. |
 | **لایه‌های Cross-Cutting، Service نیستند** | دامنه‌هایی مانند مشاهده‌پذیری یا امنیت که به‌صورت افقی روی همه سرویس‌ها اعمال می‌شوند، معمولاً به‌صورت Sidecar، Library مشترک یا زیرساخت مجزا (نه یک Business Service) پیاده‌سازی می‌شوند. |
@@ -49,7 +49,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **عامل‌ها و هماهنگی** | Agent Orchestration Engine | `agent-orchestration-service` | Microservice مستقل | قلب تصمیم‌گیری سیستم؛ نرخ تغییر بسیار بالا (منطق Planning/Routing به‌مرور توسعه می‌یابد) |
 | **دانش و زمینه** | Knowledge & Context Engine | `knowledge-context-service` | Microservice مستقل | الگوی بار متفاوت (CPU/Memory سنگین برای Embedding)؛ نیاز به Worker مجزا برای Indexing |
-| **حافظه جلسه (Session)** | Memory Management Engine | `session-memory-service` | Microservice مستقل + Cache (Redis) | نیاز به تأخیر بسیار پایین (< 10ms) و TTL کوتاه؛ مقیاس‌دهی بر اساس تعداد کاربران همزمان. |
+| **حافظه جلسه (Session)** | Memory Management Engine | `session-memory-service` | Microservice مستقل + Cache (Redis) | نیاز به تأخیر بسیار پایین (< 10ms) و TTL کوتاه؛ مقیاس‌دهی بر اساس تعداد کاربران همزمان. **این سرویس همچنین میزبان Shared Agent Context Store است.** |
 | **حافظه بلندمدت (Long-Term)** | Memory Management Engine | `long-term-memory-service` | Microservice مستقل + Vector/Relational DB | نیاز به جستجوی معنایی، ذخیره‌سازی حجیم و TTL بلندمدت؛ الگوی بار (Batch/Query) کاملاً متفاوت از Session. |
 | **ابزارها و اقدامات** | Action & Tool Engine | `tool-execution-service` (+ `sandbox-runtime` مجزا) | Microservice + Isolated Runtime | نیاز امنیتی به ایزوله‌سازی اجرای Sandbox، مجزا از منطق Registry/Catalog |
 | **مدیریت مدل‌ها** | Model Management Engine | `model-management-service` | Microservice مستقل | نیاز به مدیریت مستقل Provider Adapterها و Fallback؛ چرخه انتشار متفاوت از Orchestration |
@@ -73,10 +73,10 @@
 | **امنیت و حریم خصوصی** | Governance & Platform Services | `security-service` (Encryption/Secrets) + Library مشترک (DLP/Masking تزریق‌شده در سایر Serviceها) | Service + Shared Library | بخشی از این دامنه (KMS/Secrets) باید Service مستقل باشد؛ بخشی دیگر (Masking Logic) باید به‌صورت Library در همه سرویس‌ها تزریق شود، نه یک Service مرکزی که هر درخواست از آن عبور کند (گلوگاه عملکردی) |
 | **حاکمیت و انطباق** | Governance & Platform Services | `policy-engine-service` (PDP) + PEP به‌صورت Library/Sidecar در هر Service | Service + Sidecar Pattern | طبق معماری PDP/PEP خودِ سند `Governance_&_Compliance_Domain_Architecture`؛ PDP مرکزی است اما PEP باید توزیع‌شده باشد |
 | **حسابرسی (Audit)** | Governance & Platform Services | `audit-service` | Microservice مستقل | نیاز به ذخیره‌سازی غیرقابل‌تغییر (WORM Storage)، امضای دیجیتال و دوره نگهداری طولانی (۱ سال) برای انطباق (Compliance)؛ الگوی بار و الزامات امنیتی متفاوت از Logging و Policy Engine. |
+| **درخواست‌های موضوع داده** | Governance & Platform Services | `data-subject-request-service` | Microservice مستقل | نیاز به ذخیره‌سازی اختصاصی برای ردیابی درخواست‌ها و گزارش‌ها؛ چرخه عمر مستقل از سایر سرویس‌ها |
 | **زیرساخت و عملیات** | زیرساخت (Kubernetes) | زیرساخت پایه (Cluster, CI/CD) — **نه یک Business Service** | Platform Infrastructure | این دامنه بستر اجرای همه Serviceهای دیگر است، خودش یک Service کسب‌وکاری نیست |
 | **مشاهده‌پذیری (Logging/Metrics)** | زیرساخت (Observability Stack) | Observability Stack (Elasticsearch/Loki برای Logs، Prometheus برای Metrics) — **نه یک Business Service** | Platform Infrastructure | ماهیت Cross-Cutting؛ Logging به‌عنوان یک زیرساخت عملیاتی در نظر گرفته شده و جدا از Audit Service مدیریت می‌شود. |
 | **هوش مصنوعی مسئولانه** | Governance & Platform Services | `responsible-ai-service` (سبک) | Microservice سبک + Scheduled Job (با قابلیت ادغام در آینده) | حجم تعامل Real-time پایین است؛ در صورت نیاز به کاهش هزینه‌های عملیاتی، می‌تواند به‌عنوان کتابخانه در Governance ادغام شود. در حال حاضر به‌عنوان سرویس مستقل برای وضوح مسئولیت‌ها نگهداری می‌شود. |
-| **درخواست‌های موضوع داده** | Governance & Platform Services | `data-subject-request-service` | Microservice مستقل | نیاز به ذخیره‌سازی اختصاصی برای ردیابی درخواست‌ها و گزارش‌ها؛ چرخه عمر مستقل از سایر سرویس‌ها |
 
 ---
 
@@ -86,7 +86,7 @@
 
 | گروه | تعریف | اعضا |
 | :--- | :--- | :--- |
-| **Business Microservice** | سرویس مستقل با API/Event Contract مشخص، چرخه Deploy مستقل | API و یکپارچه‌سازی، رویداد و Webhook، اتصال‌دهنده، عامل‌ها، دانش و زمینه، حافظه و تجربه، ابزارها، مدیریت جریان کار، مدیریت مدل‌ها، مدیریت دانش، هویت و دسترسی، حاکمیت و انطباق (PDP)، هوش مصنوعی مسئولانه |
+| **Business Microservice** | سرویس مستقل با API/Event Contract مشخص، چرخه Deploy مستقل | API و یکپارچه‌سازی، رویداد و Webhook، اتصال‌دهنده، عامل‌ها، دانش و زمینه، حافظه و تجربه، ابزارها، مدیریت جریان کار، مدیریت مدل‌ها، مدیریت دانش، هویت و دسترسی، حاکمیت و انطباق (PDP)، هوش مصنوعی مسئولانه، درخواست‌های موضوع داده |
 | **Data/ML Platform** | زیرساخت پردازشی تخصصی، غالباً Batch یا مبتنی بر Cluster | مهندسی داده، یادگیری ماشین |
 | **Cross-Cutting Infrastructure / Sidecar** | نه یک Service کسب‌وکاری؛ به‌صورت Library، Sidecar یا زیرساخت پایه در همه جا حاضر است | زیرساخت و عملیات، مشاهده‌پذیری، بخشی از امنیت و حریم خصوصی (Masking/DLP)، بخشی از حاکمیت (PEP) |
 
@@ -96,7 +96,7 @@
 
 بر اساس جدول بالا، تخمین اولیه تعداد **Business Microservice مستقل** برای MVP و توسعه Enterprise به شرح زیر است (این عدد صرفاً راهنمای برنامه‌ریزی ظرفیت تیم است، نه الزام قطعی):
 
-- ۱۷ Business Microservice مستقل
+- ۱۸ Business Microservice مستقل (شامل `data-subject-request-service` به‌عنوان سرویس جدید)
 - ۲ Data/ML Platform (با زیرساخت Cluster اختصاصی)
 - ۳ Cross-Cutting Infrastructure Layer (زیرساخت، مشاهده‌پذیری، بخشی از امنیت/حاکمیت به‌صورت Sidecar)
 
@@ -115,6 +115,7 @@
 | `DevOps_and_CICD_Pipeline` | مرجع خط لوله CI/CD که باید به ازای هر واحد استقرار این سند، یک Pipeline مستقل داشته باشد |
 | `Tool_Domain_Architecture` | مرجع مرزبندی Tool/Workflow که تصمیم استقرار مجزای `workflow-engine-service` بر اساس آن اتخاذ شده |
 | `Governance_&_Compliance_Domain_Architecture` | مرجع الگوی PDP/PEP که تصمیم استقرار `policy-engine-service` + Sidecar بر اساس آن اتخاذ شده |
+| `Memory_&_Experience_Domain_Architecture` | مرجع مالکیت Shared Agent Context Store که در `session-memory-service` تعبیه شده است |
 
 ---
 

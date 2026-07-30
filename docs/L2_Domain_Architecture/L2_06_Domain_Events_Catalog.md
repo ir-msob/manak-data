@@ -1,13 +1,12 @@
-
 <div dir="rtl">
 
 # فهرست رویدادهای دامنه (Domain Events Catalog)
 
 **نام پلتفرم:** Enterprise AI Context & Automation Platform
 
-**نسخه:** 1.0
+**نسخه:** 1.2
 
-**وضعیت:** پیش‌نویس
+**وضعیت:** بازبینی‌شده
 
 **سند مرجع نام‌گذاری:** `Naming_And_Terminology_Glossary`
 
@@ -60,6 +59,8 @@
 | **خودمحتوا (Self-contained)** | هر رویداد باید به‌اندازه کافی اطلاعات (Payload) داشته باشد تا مشترکان بتوانند بدون نیاز به فراخوانی اضافی، واکنش مناسب نشان دهند. |
 | **نسخه‌بندی (Versioning)** | ساختار هر رویداد باید نسخه‌بندی شود تا تغییرات تکاملی بدون شکستن مشترکان موجود امکان‌پذیر باشد. |
 | **جداسازی (Decoupling)** | تولیدکننده و مصرف‌کننده رویدادها باید از طریق واسط رویداد (Message Broker) جدا شوند و از وابستگی مستقیم به یکدیگر پرهیز کنند. |
+| **قابلیت ردیابی کنشگر (Actor Traceability)** | هر رویداد مرتبط با اقدام کاربر یا سرویس باید هویت کنشگر آغازکننده را حمل کند تا ممیزی کامل در مسیرهای رویدادمحور امکان‌پذیر باشد (طبق `Event_&_Webhook_Domain_Architecture` بخش ۴.۲.۱). |
+| **تأیید دریافت برای رویدادهای حیاتی (Acknowledgment for Critical Events)** | رویدادهایی که بین دامنه‌ها برای واگذاری Task (مانند `AgentTaskRequested`) استفاده می‌شوند، باید دارای مکانیزم تأیید دریافت (Acknowledgment)، Timeout و Retry باشند تا از تحویل قطعی اطمینان حاصل شود. |
 
 ---
 
@@ -80,14 +81,16 @@
 | **الگوی ارتباطی (Pattern)** | همزمان (Synchronous) یا غیرهمزمان (Asynchronous) | بله |
 | **قوانین مرتبط (Related Business Rules)** | قوانین کسب‌وکار مرتبط با این رویداد (ارجاع به `Business Rule Catalog`) | خیر |
 
+> **الزام سرتاسری Envelope:** علاوه بر محموله (Payload) اختصاصی هر رویداد که در جداول زیر آمده، تمام رویدادهای این کاتالوگ باید از ساختار استاندارد Envelope تعریف‌شده در `Event_&_Webhook_Domain_Architecture` (بخش ۴.۲.۱) پیروی کنند که شامل فیلدهای سرتاسری `correlation_id`، `tenant_id`، `actor_id` و `actor_type` است. این فیلدها به‌صورت مکرر در جداول Payload زیر تکرار نشده‌اند، اما وجود آن‌ها در سطح Envelope الزامی است (به‌جز رویدادهای صرفاً سیستمی که مقدار `actor_id = system` می‌گیرند).
+
 ---
 
 ## ۶. فهرست رویدادهای دامنه
 
 ### ۶.۱. رویدادهای دامنه دانش و زمینه (Knowledge & Context Domain)
 
-| شناسه   | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
-|:--------| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | EVT-001 | **DocumentIngested** | v1.0 | دانش و زمینه | مهندسی داده، عامل‌ها و هماهنگی | دریافت یک سند جدید از طریق Connector | یک سند با موفقیت دریافت و برای پردازش آماده شد. | `document_id`, `source_type`, `content_hash`, `metadata`, `tenant_id` | غیرهمزمان |
 | EVT-002 | **DocumentProcessed** | v1.0 | دانش و زمینه | مهندسی داده | تکمیل پردازش اولیه یک سند (استخراج متن، Chunking) | سند پردازش و به قطعات قابل پردازش (Chunk) تقسیم شد. | `document_id`, `chunk_count`, `processing_time_ms`, `status` | غیرهمزمان |
 | EVT-003 | **KnowledgeIndexed** | v1.0 | دانش و زمینه | عامل‌ها و هماهنگی، حافظه و تجربه | تولید Embedding و ذخیره در Vector Database | یک واحد دانش (Knowledge) با موفقیت در پایگاه داده برداری نمایه (Index) شد. | `knowledge_id`, `chunk_id`, `embedding_version`, `source_document_id` | غیرهمزمان |
@@ -102,12 +105,15 @@
 
 | شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| EVT-007 | **TaskPlanned** | v1.0 | عامل‌ها و هماهنگی | مدیریت جریان کار، مشاهده‌پذیری | تحلیل Intent و برنامه‌ریزی توسط Planner Agent | یک Task پیچیده به زیرمراحل قابل اجرا تجزیه شد. | `task_id`, `parent_task_id`, `sub_tasks`, `plan_version`, `estimated_duration` | غیرهمزمان |
-| EVT-008 | **AgentAssigned** | v1.0 | عامل‌ها و هماهنگی | مدیریت جریان کار، مشاهده‌پذیری | واگذاری یک زیرمرحله به Agent خاص | یک Agent خاص به یک Task اختصاص داده شد. | `task_id`, `agent_id`, `agent_type`, `assigned_at`, `priority` | غیرهمزمان |
-| EVT-009 | **AgentTaskStarted** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری | شروع اجرای یک Task توسط Agent | یک Agent اجرای Task اختصاص‌یافته را آغاز کرد. | `task_id`, `agent_id`, `started_at`, `context_reference` | غیرهمزمان |
-| EVT-010 | **AgentTaskCompleted** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری، ابزارها و اقدامات | تکمیل موفقیت‌آمیز اجرای Task توسط Agent | یک Agent Task خود را با موفقیت به پایان رساند. | `task_id`, `agent_id`, `result_summary`, `duration_ms`, `confidence_score` | غیرهمزمان |
-| EVT-011 | **AgentTaskFailed** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری، هوش مصنوعی مسئولانه | بروز خطا در حین اجرای Task توسط Agent | یک Agent در اجرای Task با خطا مواجه شد. | `task_id`, `agent_id`, `error_code`, `error_message`, `retry_count` | غیرهمزمان |
-| EVT-012 | **CollaborationFinished** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری | تکمیل تمام مراحل همکاری چند‑Agent | یک چرخه کامل همکاری بین چند Agent به پایان رسید. | `collaboration_id`, `correlation_id`, `agent_ids`, `final_result`, `total_duration_ms` | غیرهمزمان |
+| EVT-008 | **TaskPlanned** | v1.0 | عامل‌ها و هماهنگی | مدیریت جریان کار، مشاهده‌پذیری | تحلیل Intent و برنامه‌ریزی توسط Planner Agent | یک Task پیچیده به زیرمراحل قابل اجرا تجزیه شد. | `task_id`, `parent_task_id`, `sub_tasks`, `plan_version`, `estimated_duration` | غیرهمزمان |
+| EVT-009 | **AgentAssigned** | v1.0 | عامل‌ها و هماهنگی | مدیریت جریان کار، مشاهده‌پذیری | واگذاری یک زیرمرحله به Agent خاص | یک Agent خاص به یک Task اختصاص داده شد. | `task_id`, `agent_id`, `agent_type`, `assigned_at`, `priority` | غیرهمزمان |
+| EVT-010 | **AgentTaskStarted** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری | شروع اجرای یک Task توسط Agent | یک Agent اجرای Task اختصاص‌یافته را آغاز کرد. | `task_id`, `agent_id`, `started_at`, `context_reference` | غیرهمزمان |
+| EVT-011 | **AgentTaskCompleted** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری، ابزارها و اقدامات، مدیریت جریان کار | تکمیل موفقیت‌آمیز اجرای Task توسط Agent (شامل Agent Taskهای واگذارشده از Workflow) | یک Agent Task خود را با موفقیت به پایان رساند. | `task_id`, `agent_id`, `result_summary`, `duration_ms`, `confidence_score` | غیرهمزمان |
+| EVT-012 | **AgentTaskFailed** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری، هوش مصنوعی مسئولانه، مدیریت جریان کار | بروز خطا در حین اجرای Task توسط Agent | یک Agent در اجرای Task با خطا مواجه شد. | `task_id`, `agent_id`, `error_code`, `error_message`, `retry_count` | غیرهمزمان |
+| EVT-013 | **CollaborationFinished** | v1.0 | عامل‌ها و هماهنگی | حافظه و تجربه، مشاهده‌پذیری | تکمیل تمام مراحل همکاری چند‑Agent | یک چرخه کامل همکاری بین چند Agent به پایان رسید. | `collaboration_id`, `correlation_id`, `agent_ids`, `final_result`, `total_duration_ms` | غیرهمزمان |
+| EVT-041 | **AgentTaskRequested** | v1.0 | مدیریت جریان کار | عامل‌ها و هماهنگی | یک گام Workflow از نوع Agent Task آماده اجراست | مدیریت جریان کار درخواست اجرای یک زیروظیفه را به‌صورت غیرهمزمان به Agent Orchestration Engine واگذار کرد. این رویداد با مکانیزم Acknowledgment، Timeout و Retry همراه است. | `workflow_instance_id`, `step_id`, `task_definition`, `context_reference`, `correlation_id`, `ack_timeout_seconds` | غیرهمزمان (با Acknowledgment) |
+| EVT-042 | **AgentTaskAcknowledged** | v1.0 | عامل‌ها و هماهنگی | مدیریت جریان کار | دریافت و تأیید رویداد `AgentTaskRequested` توسط Agent Orchestration Engine | Agent Orchestration Engine تأیید دریافت Task را به Workflow Engine ارسال کرد. | `workflow_instance_id`, `step_id`, `correlation_id`, `ack_timestamp` | غیرهمزمان |
+| EVT-043 | **AgentTaskTimeout** | v1.0 | عامل‌ها و هماهنگی | مدیریت جریان کار، مشاهده‌پذیری | عدم دریافت تأیید یا نتیجه Task در مدت زمان مشخص | Task واگذارشده به Agent به Timeout رسید و Workflow باید تصمیم‌گیری کند. | `workflow_instance_id`, `step_id`, `correlation_id`, `timeout_seconds` | غیرهمزمان |
 
 ---
 
@@ -115,10 +121,12 @@
 
 | شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| EVT-013 | **MemoryStored** | v1.0 | حافظه و تجربه | عامل‌ها و هماهنگی، دانش و زمینه | ذخیره یک تجربه یا تصمیم جدید در Memory | یک واحد حافظه (Session، Long‑Term یا Episodic) با موفقیت ذخیره شد. | `memory_id`, `memory_type`, `user_id`, `tenant_id`, `summary`, `timestamp` | غیرهمزمان |
-| EVT-014 | **MemoryRetrieved** | v1.0 | حافظه و تجربه | عامل‌ها و هماهنگی، مشاهده‌پذیری | درخواست بازیابی Memory توسط Agent | یک یا چند واحد حافظه برای یک Task خاص بازیابی شد. | `retrieval_id`, `correlation_id`, `memory_ids`, `count`, `retrieval_time_ms` | همزمان |
-| EVT-015 | **MemoryArchived** | v1.0 | حافظه و تجربه | مهندسی داده، حاکمیت و انطباق | انقضای دوره نگهداری حافظه | حافظه‌های قدیمی به‌صورت خودکار بایگانی شدند. | `archive_batch_id`, `memory_count`, `archived_at`, `retention_period` | غیرهمزمان |
-| EVT-016 | **MemoryDeleted** | v1.0 | حافظه و تجربه | حاکمیت و انطباق، مشاهده‌پذیری | درخواست حذف توسط کاربر یا انقضای کامل | یک واحد حافظه به‌صورت امن حذف شد. | `memory_id`, `memory_type`, `deletion_reason`, `deleted_at` | غیرهمزمان |
+| EVT-014 | **MemoryStored** | v1.0 | حافظه و تجربه | عامل‌ها و هماهنگی، دانش و زمینه | ذخیره یک تجربه یا تصمیم جدید در Memory | یک واحد حافظه (Session، Long‑Term یا Episodic) با موفقیت ذخیره شد. | `memory_id`, `memory_type`, `user_id`, `tenant_id`, `summary`, `timestamp` | غیرهمزمان |
+| EVT-015 | **MemoryRetrieved** | v1.0 | حافظه و تجربه | عامل‌ها و هماهنگی، مشاهده‌پذیری | درخواست بازیابی Memory توسط Agent | یک یا چند واحد حافظه برای یک Task خاص بازیابی شد. | `retrieval_id`, `correlation_id`, `memory_ids`, `count`, `retrieval_time_ms` | همزمان |
+| EVT-016 | **MemoryArchived** | v1.0 | حافظه و تجربه | مهندسی داده، حاکمیت و انطباق | انقضای دوره نگهداری حافظه | حافظه‌های قدیمی به‌صورت خودکار بایگانی شدند. | `archive_batch_id`, `memory_count`, `archived_at`, `retention_period` | غیرهمزمان |
+| EVT-017 | **MemoryDeleted** | v1.0 | حافظه و تجربه | حاکمیت و انطباق، مشاهده‌پذیری | درخواست حذف توسط کاربر یا انقضای کامل | یک واحد حافظه به‌صورت امن حذف شد. | `memory_id`, `memory_type`, `deletion_reason`, `deleted_at` | غیرهمزمان |
+| EVT-018 | **SharedContextUpdated** | v1.0 | حافظه و تجربه | عامل‌ها و هماهنگی، مشاهده‌پذیری | نوشتن موفق روی Shared Agent Context Store | Context مشترک یک Task چند‑Agent به‌روزرسانی شد. | `context_id`, `task_id`, `context_version`, `updated_by` | غیرهمزمان |
+| EVT-019 | **SharedContextConflict** | v1.0 | حافظه و تجربه | عامل‌ها و هماهنگی، مشاهده‌پذیری | تلاش برای نوشتن با نسخه قدیمی | تعارض نسخه در نوشتن روی Shared Agent Context شناسایی و رد شد. | `context_id`, `task_id`, `attempted_version`, `current_version`, `agent_id` | غیرهمزمان |
 
 ---
 
@@ -126,12 +134,12 @@
 
 | شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| EVT-017 | **ToolRegistered** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حاکمیت و انطباق | ثبت یک Tool جدید در Tool Registry | یک Tool جدید برای استفاده در پلتفرم ثبت شد. | `tool_id`, `tool_name`, `version`, `capabilities`, `owner_team` | غیرهمزمان |
-| EVT-018 | **ToolExecutionStarted** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، مشاهده‌پذیری | درخواست اجرای Tool توسط Orchestration Engine | اجرای یک Tool توسط Action & Tool Engine آغاز شد. | `execution_id`, `correlation_id`, `tool_id`, `parameters`, `started_at` | غیرهمزمان |
-| EVT-019 | **ToolExecutionSucceeded** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حافظه و تجربه، مشاهده‌پذیری | تکمیل موفقیت‌آمیز اجرای Tool | یک Tool با موفقیت اجرا و نتیجه آن بازگردانده شد. | `execution_id`, `tool_id`, `result`, `duration_ms`, `output_size` | غیرهمزمان |
-| EVT-020 | **ToolExecutionFailed** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حافظه و تجربه، مشاهده‌پذیری | بروز خطا در حین اجرای Tool | اجرای یک Tool با خطا مواجه شد. | `execution_id`, `tool_id`, `error_code`, `error_message`, `retry_count` | غیرهمزمان |
-| EVT-021 | **ToolDeprecated** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حاکمیت و انطباق | منسوخ‌شدن یک Tool بر اساس Policy یا تغییر نیازمندی | یک Tool از چرخه استفاده خارج شد. | `tool_id`, `deprecation_reason`, `replaced_by_id`, `deprecated_at` | غیرهمزمان |
-| EVT-026 | **CompensationFailed** | v1.0 | مدیریت جریان کار | مشاهده‌پذیری، حاکمیت و انطباق، عملیات | شکست در عملیات جبرانی یک گام گردش‌کار | عملیات جبرانی با وجود Retry موفق نشد و گردش‌کار نیاز به مداخله دستی دارد. | `workflow_instance_id`, `step_id`, `tool_id`, `error_message`, `retry_count`, `dlq_reference` | غیرهمزمان |
+| EVT-020 | **ToolRegistered** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حاکمیت و انطباق | ثبت یک Tool جدید در Tool Registry | یک Tool جدید برای استفاده در پلتفرم ثبت شد. | `tool_id`, `tool_name`, `version`, `capabilities`, `owner_team` | غیرهمزمان |
+| EVT-021 | **ToolExecutionStarted** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، مشاهده‌پذیری | درخواست اجرای Tool توسط Orchestration Engine | اجرای یک Tool توسط Action & Tool Engine آغاز شد. | `execution_id`, `correlation_id`, `tool_id`, `parameters`, `started_at` | غیرهمزمان |
+| EVT-022 | **ToolExecutionSucceeded** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حافظه و تجربه، مشاهده‌پذیری | تکمیل موفقیت‌آمیز اجرای Tool | یک Tool با موفقیت اجرا و نتیجه آن بازگردانده شد. | `execution_id`, `tool_id`, `result`, `duration_ms`, `output_size`, `compensation_status` | غیرهمزمان |
+| EVT-023 | **ToolExecutionFailed** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حافظه و تجربه، مشاهده‌پذیری | بروز خطا در حین اجرای Tool | اجرای یک Tool با خطا مواجه شد. | `execution_id`, `tool_id`, `error_code`, `error_message`, `retry_count`, `compensation_status` | غیرهمزمان |
+| EVT-024 | **ToolDeprecated** | v1.0 | ابزارها و اقدامات | عامل‌ها و هماهنگی، حاکمیت و انطباق | منسوخ‌شدن یک Tool بر اساس Policy یا تغییر نیازمندی | یک Tool از چرخه استفاده خارج شد. | `tool_id`, `deprecation_reason`, `replaced_by_id`, `deprecated_at` | غیرهمزمان |
+| EVT-025 | **CompensationFailed** | v1.0 | مدیریت جریان کار | مشاهده‌پذیری، حاکمیت و انطباق، عملیات | شکست در عملیات جبرانی یک گام گردش‌کار | عملیات جبرانی با وجود Retry موفق نشد و گردش‌کار نیاز به مداخله دستی دارد. | `workflow_instance_id`, `step_id`, `tool_id`, `error_message`, `retry_count`, `dlq_reference` | غیرهمزمان |
 
 ---
 
@@ -139,10 +147,10 @@
 
 | شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| EVT-022 | **ModelRegistered** | v1.0 | مدیریت مدل‌ها | یادگیری ماشین، عامل‌ها و هماهنگی | ثبت یک مدل جدید در Model Registry | یک مدل هوش مصنوعی جدید برای استفاده ثبت شد. | `model_id`, `model_name`, `version`, `provider`, `capabilities` | غیرهمزمان |
-| EVT-023 | **ModelDeployed** | v1.0 | مدیریت مدل‌ها | عامل‌ها و هماهنگی، مشاهده‌پذیری | استقرار یک نسخه از مدل در محیط تولید | یک نسخه از مدل با موفقیت در محیط تولید مستقر شد. | `model_id`, `version`, `deployment_id`, `environment`, `deployed_at` | غیرهمزمان |
-| EVT-024 | **ModelRoutingChanged** | v1.0 | مدیریت مدل‌ها | عامل‌ها و هماهنگی، مشاهده‌پذیری | تغییر در سیاست مسیریابی مدل | مسیر ترافیک بین مدل‌ها تغییر کرد (مثلاً تغییر ارائه‌دهنده). | `routing_policy_id`, `new_rules`, `effective_at`, `reason` | غیرهمزمان |
-| EVT-025 | **ModelRetired** | v1.0 | مدیریت مدل‌ها | یادگیری ماشین، عامل‌ها و هماهنگی | بازنشستگی یک مدل بر اساس عملکرد یا جایگزینی | یک مدل از چرخه تولید خارج شد. | `model_id`, `version`, `retirement_reason`, `replaced_by_id` | غیرهمزمان |
+| EVT-026 | **ModelRegistered** | v1.0 | مدیریت مدل‌ها | یادگیری ماشین، عامل‌ها و هماهنگی | ثبت یک مدل جدید در Model Registry | یک مدل هوش مصنوعی جدید برای استفاده ثبت شد. | `model_id`, `model_name`, `version`, `provider`, `capabilities` | غیرهمزمان |
+| EVT-027 | **ModelDeployed** | v1.0 | مدیریت مدل‌ها | عامل‌ها و هماهنگی، مشاهده‌پذیری | استقرار یک نسخه از مدل در محیط تولید | یک نسخه از مدل با موفقیت در محیط تولید مستقر شد. | `model_id`, `version`, `deployment_id`, `environment`, `deployed_at` | غیرهمزمان |
+| EVT-028 | **ModelRoutingChanged** | v1.0 | مدیریت مدل‌ها | عامل‌ها و هماهنگی، مشاهده‌پذیری | تغییر در سیاست مسیریابی مدل | مسیر ترافیک بین مدل‌ها تغییر کرد (مثلاً تغییر ارائه‌دهنده). | `routing_policy_id`, `new_rules`, `effective_at`, `reason` | غیرهمزمان |
+| EVT-029 | **ModelRetired** | v1.0 | مدیریت مدل‌ها | یادگیری ماشین، عامل‌ها و هماهنگی | بازنشستگی یک مدل بر اساس عملکرد یا جایگزینی | یک مدل از چرخه تولید خارج شد. | `model_id`, `version`, `retirement_reason`, `replaced_by_id` | غیرهمزمان |
 
 ---
 
@@ -150,11 +158,12 @@
 
 | شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| EVT-026 | **UserAuthenticated** | v1.0 | هویت و دسترسی | مشاهده‌پذیری، حاکمیت و انطباق | ورود موفق کاربر به سیستم | یک کاربر با موفقیت احراز هویت شد. | `user_id`, `tenant_id`, `authentication_method`, `ip_address`, `timestamp` | غیرهمزمان |
-| EVT-027 | **AuthorizationGranted** | v1.0 | هویت و دسترسی | مشاهده‌پذیری، حاکمیت و انطباق | تأیید مجوز دسترسی کاربر | دسترسی یک کاربر به یک منبع خاص تأیید شد. | `user_id`, `resource_id`, `action`, `decision`, `policy_evaluated` | غیرهمزمان |
-| EVT-028 | **SecurityAlert** | v1.0 | امنیت و حریم خصوصی | حاکمیت و انطباق، مشاهده‌پذیری | شناسایی یک رویداد امنیتی مشکوک یا حمله | یک رویداد امنیتی (مانند Prompt Injection، نشت داده) شناسایی شد. | `alert_id`, `severity`, `type`, `description`, `source`, `timestamp` | غیرهمزمان |
-| EVT-029 | **PolicyApplied** | v1.0 | حاکمیت و انطباق | همه دامنه‌ها | تغییر یا اعمال یک Policy جدید | یک Policy جدید یا به‌روزرسانی‌شده بر روی سیستم اعمال شد. | `policy_id`, `policy_type`, `scope`, `effective_at`, `version` | غیرهمزمان |
-| EVT-030 | **ComplianceBreach** | v1.0 | حاکمیت و انطباق | امنیت و حریم خصوصی، مشاهده‌پذیری | تشخیص نقض یک الزام انطباقی | یک نقض انطباق (مثلاً نگهداری داده بیش از حد مجاز) شناسایی شد. | `breach_id`, `rule_id`, `details`, `severity`, `detected_at` | غیرهمزمان |
+| EVT-030 | **UserAuthenticated** | v1.0 | هویت و دسترسی | مشاهده‌پذیری، حاکمیت و انطباق | ورود موفق کاربر به سیستم | یک کاربر با موفقیت احراز هویت شد. | `user_id`, `tenant_id`, `authentication_method`, `ip_address`, `timestamp` | غیرهمزمان |
+| EVT-031 | **AuthorizationGranted** | v1.0 | هویت و دسترسی | مشاهده‌پذیری، حاکمیت و انطباق | تأیید مجوز دسترسی کاربر | دسترسی یک کاربر به یک منبع خاص تأیید شد. | `user_id`, `resource_id`, `action`, `decision`, `policy_evaluated` | غیرهمزمان |
+| EVT-032 | **SecurityAlert** | v1.0 | امنیت و حریم خصوصی | حاکمیت و انطباق، مشاهده‌پذیری | شناسایی یک رویداد امنیتی مشکوک یا حمله | یک رویداد امنیتی (مانند Prompt Injection، نشت داده) شناسایی شد. | `alert_id`, `severity`, `type`, `description`, `source`, `timestamp` | غیرهمزمان |
+| EVT-033 | **PolicyApplied** | v1.0 | حاکمیت و انطباق | همه دامنه‌ها | تغییر یا اعمال یک Policy جدید | یک Policy جدید یا به‌روزرسانی‌شده بر روی سیستم اعمال شد. | `policy_id`, `policy_type`, `scope`, `effective_at`, `version` | غیرهمزمان |
+| EVT-034 | **ComplianceBreach** | v1.0 | حاکمیت و انطباق | امنیت و حریم خصوصی، مشاهده‌پذیری | تشخیص نقض یک الزام انطباقی | یک نقض انطباق (مثلاً نگهداری داده بیش از حد مجاز) شناسایی شد. | `breach_id`, `rule_id`, `details`, `severity`, `detected_at` | غیرهمزمان |
+| EVT-035 | **PDPFallbackActivated** | v1.0 | حاکمیت و انطباق | مشاهده‌پذیری، عملیات | یک PEP به‌دلیل عدم دسترسی به PDP، به کش محلی تصمیمات سوئیچ کرد | رفتار Fallback موقت PDP (طبق `Governance_&_Compliance_Domain_Architecture` بخش ۴.۲.۱) فعال شد. | `pep_id`, `service_name`, `operation_risk_level`, `activated_at` | غیرهمزمان |
 
 ---
 
@@ -162,10 +171,11 @@
 
 | شناسه | نام رویداد | نسخه | دامنه تولیدکننده | دامنه‌های مصرف‌کننده | محرک | معنای کسب‌وکار | محموله کلیدی | الگوی ارتباطی |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| EVT-031 | **DataPipelineStarted** | v1.0 | مهندسی داده | مشاهده‌پذیری | شروع یک خط لوله داده (Batch یا Streaming) | یک خط لوله داده جدید شروع به اجرا کرد. | `pipeline_id`, `pipeline_type`, `source`, `target`, `started_at` | غیرهمزمان |
-| EVT-032 | **DataPipelineCompleted** | v1.0 | مهندسی داده | دانش و زمینه، مشاهده‌پذیری | تکمیل موفق یک خط لوله داده | یک خط لوله داده با موفقیت به پایان رسید. | `pipeline_id`, `records_processed`, `duration_ms`, `data_size_mb` | غیرهمزمان |
-| EVT-033 | **DataPipelineFailed** | v1.0 | مهندسی داده | مشاهده‌پذیری، حاکمیت و انطباق | بروز خطا در یک خط لوله داده | یک خط لوله داده با خطا مواجه شد. | `pipeline_id`, `error_code`, `error_message`, `failed_stage` | غیرهمزمان |
-| EVT-034 | **DataQualityAlert** | v1.0 | مهندسی داده | حاکمیت و انطباق، مشاهده‌پذیری | کاهش کیفیت داده زیر آستانه مجاز | کیفیت یک مجموعه داده از حد مجاز پایین‌تر رفت. | `dataset_id`, `quality_score`, `affected_dimensions`, `recommendation` | غیرهمزمان |
+| EVT-036 | **DataPipelineStarted** | v1.0 | مهندسی داده | مشاهده‌پذیری | شروع یک خط لوله داده (Batch یا Streaming) | یک خط لوله داده جدید شروع به اجرا کرد. | `pipeline_id`, `pipeline_type`, `source`, `target`, `started_at` | غیرهمزمان |
+| EVT-037 | **DataPipelineCompleted** | v1.0 | مهندسی داده | دانش و زمینه، مشاهده‌پذیری | تکمیل موفق یک خط لوله داده | یک خط لوله داده با موفقیت به پایان رسید. | `pipeline_id`, `records_processed`, `duration_ms`, `data_size_mb` | غیرهمزمان |
+| EVT-038 | **DataPipelineFailed** | v1.0 | مهندسی داده | مشاهده‌پذیری، حاکمیت و انطباق | بروز خطا در یک خط لوله داده | یک خط لوله داده با خطا مواجه شد. | `pipeline_id`, `error_code`, `error_message`, `failed_stage` | غیرهمزمان |
+| EVT-039 | **DataQualityAlert** | v1.0 | مهندسی داده | حاکمیت و انطباق، مشاهده‌پذیری | کاهش کیفیت داده زیر آستانه مجاز | کیفیت یک مجموعه داده از حد مجاز پایین‌تر رفت. | `dataset_id`, `quality_score`, `affected_dimensions`, `recommendation` | غیرهمزمان |
+| EVT-040 | **DataSchemaChanged** | v1.0 | مدیریت فراداده و دودمان | مهندسی داده، دانش و زمینه | تغییر در Schema یک مجموعه داده | طرحواره یک مجموعه داده تغییر کرد و مصرف‌کنندگان باید مطلع شوند. | `schema_id`, `dataset_id`, `new_version`, `deprecated_version`, `compatibility_notes` | غیرهمزمان |
 
 ---
 
@@ -190,7 +200,8 @@
 | **Message Broker** | انتقال و ذخیره‌سازی موقت رویدادها (مانند Apache Kafka) | `Deployment_Environment_Topology` |
 | **Event Publisher** | کتابخانه یا سرویس انتشار رویداد در هر دامنه | اسناد طراحی هر دامنه |
 | **Event Subscriber** | کتابخانه یا سرویس اشتراک و پردازش رویداد در هر دامنه | اسناد طراحی هر دامنه |
-| **Schema Registry** | نگهداری و نسخه‌بندی ساختار رویدادها | `Data_Governance_and_Compliance` |
+| **Schema Registry** | نگهداری و نسخه‌بندی ساختار رویدادها (میزبانی‌شده در `metadata-lineage-service`) | `Metadata_Lineage_Domain_Architecture` |
+| **Acknowledgment Mechanism** | مکانیزم تأیید دریافت، Timeout و Retry برای رویدادهای حیاتی (پیاده‌سازی‌شده در `Event_&_Webhook_Domain_Architecture`) | `Event_&_Webhook_Domain_Architecture` بخش ۴.۳ |
 
 ---
 
@@ -199,13 +210,15 @@
 | نام سند | نوع ارتباط |
 | :--- | :--- |
 | `Domain Landscape` | مرجع دامنه‌های اصلی که رویدادها در آن‌ها تولید یا مصرف می‌شوند |
-| `Context Map` | مرجع الگوهای تعامل که رویدادها به‌عنوان مکانیزم اصلی ارتباط غیرهمزمان در آن تعریف شده‌اند |
-| `Domain Dependency Map` | مرجع وابستگی‌های دامنه‌ها که رویدادها به کاهش وابستگی مستقیم کمک می‌کنند |
-| `Business Rule Catalog` | مرجع قوانین کسب‌وکار که رویدادها ممکن است آن‌ها را فعال یا تحت تأثیر قرار دهند (ارجاع در بخش ۶) |
+| `Context_Map` | مرجع الگوهای تعامل که رویدادها به‌عنوان مکانیزم اصلی ارتباط غیرهمزمان در آن تعریف شده‌اند، شامل مسیر رویدادمحور مدیریت جریان کار → عامل‌ها با مکانیزم Acknowledgment |
+| `Domain_Dependency_Map` | مرجع وابستگی‌های دامنه‌ها که رویدادها به کاهش وابستگی مستقیم کمک می‌کنند |
+| `Business_Rule_Catalog` | مرجع قوانین کسب‌وکار که رویدادها ممکن است آن‌ها را فعال یا تحت تأثیر قرار دهند |
 | `Architecture_Overview_Enterprise_AI_Platform` | مرجع معماری Event‑Driven که زیرساخت رویدادها بر اساس آن طراحی شده است |
 | `API_Contract_Overview` | مرجع قراردادهای API و رویدادهای خارجی که رویدادهای دامنه با آن‌ها هم‌راستا هستند |
 | `Integration_Boundaries_And_Tooling_Framework` | مرجع مرزهای یکپارچه‌سازی که رویدادها برای ارتباط بین دامنه‌ها استفاده می‌شوند |
 | `Data_Governance_and_Compliance` | مرجع حاکمیت داده که رویدادهای مربوط به کیفیت داده و انطباق با آن هم‌راستا هستند |
+| `Event_&_Webhook_Domain_Architecture` | مرجع ساختار استاندارد Envelope (بخش ۴.۲.۱)، مکانیزم Acknowledgment (بخش ۴.۳) و الزام Actor Traceability که در بخش ۴ و ۵ این سند به آن ارجاع داده شده است |
+| `Memory_&_Experience_Domain_Architecture` | مرجع Shared Agent Context Store که رویدادهای `SharedContextUpdated`/`SharedContextConflict` (بخش ۶.۳) از آن تولید می‌شوند |
 
 ---
 
@@ -213,7 +226,7 @@
 
 این سند فهرست جامع رویدادهای دامنه پلتفرم را جمع‌آوری و دسته‌بندی می‌کند و شفافیت کاملی در مورد وقایع مهم کسب‌وکاری که در هر دامنه رخ می‌دهند، فراهم می‌آورد. رویدادهای مستندشده در این سند، مبنای طراحی معماری رویدادمحور، ارتباط غیرهمزمان بین دامنه‌ها و پیاده‌سازی الگوی **سازگاری نهایی** (Eventual Consistency) هستند.
 
-ثبت رویدادها بر اساس **زبان مشترک** (Ubiquitous Language) موجب افزایش **جداسازی** (Decoupling)، **شفافیت** منطق درونی دامنه و **تکامل‌پذیری** سیستم می‌شود. تیم‌های توسعه می‌توانند با مراجعه به این کاتالوگ، درک دقیقی از رویدادهای موجود داشته باشند و از تکرار یا تناقض در تعریف رویدادهای جدید جلوگیری کنند.
+با اضافه شدن رویدادهای جدید مرتبط با مکانیزم Acknowledgment (`AgentTaskRequested` با `ack_timeout_seconds`، `AgentTaskAcknowledged` و `AgentTaskTimeout`)، قابلیت اطمینان تحویل رویدادهای حیاتی بین دامنه‌ها به‌طور قابل‌توجهی افزایش یافته است. ثبت رویدادها بر اساس **زبان مشترک** (Ubiquitous Language) و با رعایت الزام هویت کنشگر (Actor Traceability) موجب افزایش **جداسازی** (Decoupling)، **شفافیت** منطق درونی دامنه، **تکامل‌پذیری** سیستم و **قابلیت ممیزی کامل** حتی در مسیرهای کاملاً رویدادمحور می‌شود. تیم‌های توسعه می‌توانند با مراجعه به این کاتالوگ، درک دقیقی از رویدادهای موجود داشته باشند و از تکرار یا تناقض در تعریف رویدادهای جدید جلوگیری کنند.
 
 **مسئولیت به‌روزرسانی:** تیم معماری به همراه تیم‌های محصول و توسعه مسئول بازبینی دوره‌ای این سند، به‌روزرسانی رویدادهای موجود، اضافه کردن رویدادهای جدید و منسوخ‌سازی رویدادهای قدیمی بر اساس تغییرات نیازمندی‌های کسب‌وکار هستند.
 
