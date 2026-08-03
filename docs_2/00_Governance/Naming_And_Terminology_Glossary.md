@@ -28,8 +28,6 @@
 | **Memory Management Engine** | موتور مدیریت حافظه | Session Memory، Long-Term Memory، Episodic Memory، Experience |
 | **Governance & Platform Services** | سرویس‌های حاکمیت و پلتفرم | Security، Policy، Guardrail، Audit، Monitoring، Cost Control |
 
-> این نام‌ها، نام‌های رسمی و معیار پلتفرم هستند. نام‌های قبلی یا معادل‌های دیگر (مانند Reasoning & Orchestration Layer یا Action Engine) صرفاً به‌عنوان نام مستعار (Alias) قابل قبول‌اند، اما نباید به‌عنوان عنوان رسمی در مستندات جدید استفاده شوند.
-
 ---
 
 ## ۳. واژه‌نامه اصطلاحات کلیدی (Terminology Glossary)
